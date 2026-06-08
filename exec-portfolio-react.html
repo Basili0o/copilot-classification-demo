@@ -1,0 +1,1940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Copilot Customer Classification — Exec Portfolio (React)</title>
+  <script>
+    (() => {
+      const param = new URLSearchParams(window.location.search).get("clawpilotTheme");
+      const theme =
+        param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --cp-bg: #f7f4ef;
+      --cp-bg-elevated: #fcfbf8;
+      --cp-surface: #ffffff;
+      --cp-surface-soft: #f5f5f5;
+      --cp-border: #dedede;
+      --cp-border-strong: #919191;
+      --cp-text: #242424;
+      --cp-text-muted: #5c5c5c;
+      --cp-text-soft: #6f6f6f;
+      --cp-accent: #b11f4b;
+      --cp-accent-hover: #9a1a41;
+      --cp-accent-soft: rgba(177, 31, 75, 0.08);
+      --cp-accent-fg: #ffffff;
+      --cp-success: #16a34a;
+      --cp-danger: #dc2626;
+      --cp-warning: #f59e0b;
+      --cp-link: #0078d4;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+      --cp-overlay: rgba(255, 255, 255, 0.8);
+      --cp-panel: rgba(255, 255, 255, 0.86);
+      --cp-panel-strong: rgba(255, 255, 255, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.55);
+      --cp-highlight: rgba(177, 31, 75, 0.12);
+
+      /* Decision-tree bucket colors (from [Classification Color] measure) */
+      --bucket-maintain: #1F7A1F;
+      --bucket-expansion: #E8741C;
+      --bucket-action: #E08A1A;
+      --bucket-risk: #C8102E;
+
+      /* Clickable globe region picker */
+      --globe-ocean1: #eef4fb;
+      --globe-ocean2: #cfe0f1;
+      --globe-grat: #93b0cc;
+      --globe-land: #9ab497;
+      --globe-land-edge: #7c9a79;
+      --globe-land-hover: #b6cfb2;
+      --globe-land-dim: #c8d2c6;
+    }
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --cp-bg: #3d3b3a;
+      --cp-bg-elevated: #343231;
+      --cp-surface: #292929;
+      --cp-surface-soft: #2e2e2e;
+      --cp-border: #474747;
+      --cp-border-strong: #5f5f5f;
+      --cp-text: #dedede;
+      --cp-text-muted: #919191;
+      --cp-text-soft: #b0b0b0;
+      --cp-accent: #fd8ea1;
+      --cp-accent-hover: #fb7b91;
+      --cp-accent-soft: rgba(253, 142, 161, 0.14);
+      --cp-accent-fg: #1a1a1a;
+      --cp-success: #4ade80;
+      --cp-danger: #f87171;
+      --cp-warning: #fbbf24;
+      --cp-link: #4da6ff;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+      --cp-overlay: rgba(41, 41, 41, 0.88);
+      --cp-panel: rgba(41, 41, 41, 0.72);
+      --cp-panel-strong: rgba(41, 41, 41, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.04);
+      --cp-highlight: rgba(253, 142, 161, 0.12);
+
+      --bucket-maintain: #4ade80;
+      --bucket-expansion: #FB9A3C;
+      --bucket-action: #fbbf24;
+      --bucket-risk: #f87171;
+
+      --globe-ocean1: #2c3c50;
+      --globe-ocean2: #1b2532;
+      --globe-grat: #44607e;
+      --globe-land: #4f6d56;
+      --globe-land-edge: #3d5743;
+      --globe-land-hover: #628468;
+      --globe-land-dim: #38473d;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--cp-bg);
+      color: var(--cp-text);
+      font-size: 14px;
+      line-height: 1.45;
+      min-height: 100vh;
+    }
+    .page {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 24px 28px 48px;
+    }
+
+    /* Power BI–style report banner */
+    .pbi-banner {
+      background: #1f3864;
+      color: #ffffff;
+      padding: 10px 28px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      border-bottom: 2px solid #16264a;
+    }
+    .pbi-banner__title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      margin-right: 12px;
+      white-space: nowrap;
+    }
+    .pbi-banner__filters {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+    .pbi-filter {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #dbe4f5;
+    }
+    .pbi-filter label {
+      font-weight: 600;
+      color: #ffffff;
+    }
+    .pbi-filter select {
+      appearance: none;
+      -webkit-appearance: none;
+      background: #ffffff
+        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%231f3864' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>")
+        no-repeat right 8px center / 10px 7px;
+      color: #1f3864;
+      border: 1px solid #ffffff;
+      border-radius: 2px;
+      padding: 4px 26px 4px 10px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      min-width: 110px;
+      cursor: pointer;
+    }
+    .pbi-filter select:focus {
+      outline: 2px solid #ffffff;
+      outline-offset: 1px;
+    }
+    html[data-theme="dark"] .pbi-banner {
+      background: #16264a;
+      border-bottom-color: #0c1730;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--cp-border);
+      margin-bottom: 20px;
+    }
+    .title-block h1 {
+      margin: 0 0 4px 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--cp-text);
+    }
+    .title-block .subtitle {
+      margin: 0;
+      font-size: 12px;
+      color: var(--cp-text-muted);
+    }
+    .meta-block {
+      text-align: right;
+      font-size: 12px;
+      color: var(--cp-text-muted);
+    }
+    .meta-block strong { color: var(--cp-text); font-weight: 500; }
+
+    /* Legend strip */
+    .legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 10px 14px;
+      background: var(--cp-bg-elevated);
+      border: 1px solid var(--cp-border);
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-size: 12px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .swatch {
+      width: 12px; height: 12px; border-radius: 3px;
+      display: inline-block;
+    }
+    .sw-maintain  { background: var(--bucket-maintain); }
+    .sw-expansion { background: var(--bucket-expansion); }
+    .sw-action    { background: var(--bucket-action); }
+    .sw-risk      { background: var(--bucket-risk); }
+
+    /* KPI strip */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .kpi {
+      background: var(--cp-surface);
+      border: 1px solid var(--cp-border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      box-shadow: 0 0 2px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .kpi .label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--cp-text-muted);
+      margin-bottom: 6px;
+    }
+    .kpi .value {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--cp-text);
+      letter-spacing: -0.3px;
+    }
+    .kpi .sub {
+      font-size: 11px;
+      color: var(--cp-text-soft);
+      margin-top: 4px;
+    }
+    .kpi.accent .value { color: var(--cp-accent); }
+    .kpi.warn .value   { color: var(--bucket-action); }
+    .kpi.risk .value   { color: var(--bucket-risk); }
+
+    /* Section row layouts */
+    .row { display: grid; gap: 18px; margin-bottom: 18px; }
+    .row.two   { grid-template-columns: 1fr 1fr; }
+    .row.three { grid-template-columns: 1.2fr 1fr 1fr; }
+    .row.donut-and-matrix { grid-template-columns: 360px 1fr; }
+
+    /* Card */
+    .card {
+      background: var(--cp-surface);
+      border: 1px solid var(--cp-border);
+      border-radius: 16px;
+      padding: 18px 20px;
+      box-shadow: 0 0 2px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .card h2 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--cp-text);
+      margin: 0 0 4px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .card .hint {
+      font-size: 11px;
+      color: var(--cp-text-muted);
+      margin: 0 0 14px 0;
+    }
+
+    /* Donut */
+    .donut-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+    svg.donut { width: 240px; height: 240px; }
+    .donut-center {
+      position: relative;
+    }
+    .donut-center-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .donut-center-text .big {
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--cp-text);
+      line-height: 1;
+    }
+    .donut-center-text .small {
+      font-size: 11px;
+      color: var(--cp-text-muted);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .donut-legend {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      width: 100%;
+    }
+    .donut-legend .row-item {
+      display: grid;
+      grid-template-columns: 14px 1fr auto auto;
+      gap: 10px;
+      align-items: center;
+      font-size: 12px;
+      padding: 6px 8px;
+      border-radius: 6px;
+    }
+    .donut-legend .row-item:hover { background: var(--cp-surface-soft); }
+    .donut-legend .name { color: var(--cp-text); }
+    .donut-legend .pct { color: var(--cp-text-muted); width: 48px; text-align: right; }
+    .donut-legend .count { color: var(--cp-text); font-variant-numeric: tabular-nums; width: 60px; text-align: right; font-weight: 500; }
+
+    /* Classification distribution bar */
+    .leaf-list {
+      display: grid;
+      gap: 10px;
+    }
+    .leaf {
+      display: grid;
+      grid-template-columns: 1fr 80px;
+      gap: 10px;
+      align-items: center;
+    }
+    .leaf .meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+    }
+    .leaf .bar-track {
+      grid-column: 1 / -1;
+      height: 6px;
+      background: var(--cp-surface-soft);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .leaf .bar-fill {
+      height: 100%;
+      border-radius: 3px;
+    }
+    .leaf .count {
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+      text-align: right;
+      font-size: 13px;
+    }
+    .leaf .count-sub {
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      font-size: 11px;
+      color: var(--cp-text-muted);
+      margin-top: 2px;
+    }
+    .leaf .leaf-label {
+      color: var(--cp-text);
+      font-weight: 500;
+    }
+
+    /* Classification decision tree */
+    .dtree-entry {
+      display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px;
+      background: var(--cp-accent-soft);
+      border: 1px solid var(--cp-border);
+      border-left: 3px solid var(--cp-accent);
+      border-radius: 8px; padding: 10px 14px; margin-bottom: 18px;
+      font-size: 12.5px; color: var(--cp-text); line-height: 1.5;
+    }
+    .dtree-entry__tag {
+      font-size: 10px; text-transform: uppercase; letter-spacing: .6px; font-weight: 700;
+      color: var(--cp-accent); border: 1px solid var(--cp-accent);
+      border-radius: 999px; padding: 2px 8px; white-space: nowrap;
+    }
+    .dtree { font-size: 13px; overflow-x: auto; padding-bottom: 4px; }
+    .dtree-kids { margin-left: 18px; padding-left: 18px; border-left: 1.5px solid var(--cp-border); }
+    .dtree-branch { position: relative; padding: 6px 0; }
+    .dtree-branch::before {
+      content: ""; position: absolute; left: -18px; top: 24px;
+      width: 16px; height: 1.5px; background: var(--cp-border);
+    }
+    .dtree-node {
+      display: inline-block; background: var(--cp-surface-soft);
+      border: 1px solid var(--cp-border); border-radius: 8px;
+      padding: 7px 12px; font-weight: 600; color: var(--cp-text);
+    }
+    .dtree-node code {
+      font-weight: 700; color: var(--cp-accent);
+      background: var(--cp-accent-soft); padding: 0 4px; border-radius: 4px;
+    }
+    .dtree-edge {
+      display: inline-block; font-size: 10.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .4px;
+      padding: 1px 7px; border-radius: 999px; margin-right: 8px; vertical-align: middle;
+    }
+    .dtree-edge--yes { color: var(--cp-success); border: 1px solid var(--cp-success); }
+    .dtree-edge--no  { color: var(--cp-text-muted); border: 1px solid var(--cp-border-strong); }
+    .dtree-leaf {
+      display: inline-flex; align-items: center; gap: 10px;
+      text-decoration: none; cursor: pointer;
+      background: var(--cp-surface); border: 1px solid var(--cp-border);
+      border-left-width: 4px; border-radius: 8px; padding: 7px 12px;
+      color: var(--cp-text); transition: box-shadow .12s ease, transform .12s ease;
+    }
+    .dtree-leaf:hover { box-shadow: var(--cp-shadow); transform: translateY(-1px); }
+    .dtree-leaf__code {
+      font-weight: 700; font-variant-numeric: tabular-nums; font-size: 12px;
+      min-width: 28px; height: 24px; padding: 0 6px;
+      display: inline-flex; align-items: center; justify-content: center; border-radius: 6px;
+    }
+    .dtree-leaf__txt { font-size: 12.5px; }
+    .dtree-leaf__sub { color: var(--cp-text-muted); }
+    .dtree-leaf--maintain  { border-left-color: var(--bucket-maintain); }
+    .dtree-leaf--maintain  .dtree-leaf__code { background: var(--bucket-maintain); color: #ffffff; }
+    .dtree-leaf--expansion { border-left-color: var(--bucket-expansion); }
+    .dtree-leaf--expansion .dtree-leaf__code { background: var(--bucket-expansion); color: #3a1f00; }
+    .dtree-leaf--action    { border-left-color: var(--bucket-action); }
+    .dtree-leaf--action    .dtree-leaf__code { background: var(--bucket-action); color: #3a2300; }
+    .dtree-leaf--risk      { border-left-color: var(--bucket-risk); }
+    .dtree-leaf--risk      .dtree-leaf__code { background: var(--bucket-risk); color: #ffffff; }
+    html[data-theme="dark"] .dtree-leaf--maintain  .dtree-leaf__code,
+    html[data-theme="dark"] .dtree-leaf--expansion .dtree-leaf__code,
+    html[data-theme="dark"] .dtree-leaf--action    .dtree-leaf__code,
+    html[data-theme="dark"] .dtree-leaf--risk      .dtree-leaf__code { color: #10110f; }
+    .dtree-foot {
+      display: flex; gap: 16px; flex-wrap: wrap; align-items: center;
+      margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--cp-border);
+      font-size: 11.5px; color: var(--cp-text-muted);
+    }
+    .dtree-foot .swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; vertical-align: -1px; margin-right: 4px; }
+
+    /* Subgroup breakdown group heading */
+    .sub-group-head {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--cp-text-muted); margin: 14px 0 4px;
+    }
+    .sub-group-head:first-child { margin-top: 0; }
+    .sub-group-head .swatch { width: 11px; height: 11px; border-radius: 3px; }
+    .sub-group-total { margin-left: auto; color: var(--cp-text); font-variant-numeric: tabular-nums; }
+
+    /* Drill subgroup chips */
+    .drill-chips {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      padding: 10px 20px; border-bottom: 1px solid var(--cp-border);
+      background: var(--cp-bg-elevated);
+    }
+    .drill-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px;
+      border: 1px solid var(--cp-border); background: var(--cp-surface);
+      color: var(--cp-text); font: inherit; font-size: 12px; cursor: pointer;
+    }
+    .drill-chip span { font-variant-numeric: tabular-nums; color: var(--cp-text-muted); font-weight: 600; }
+    .drill-chip:hover { border-color: var(--cp-border-strong); }
+    .drill-chip.is-active { background: var(--cp-accent); border-color: var(--cp-accent); color: var(--cp-accent-fg); }
+    .drill-chip.is-active span { color: var(--cp-accent-fg); }
+
+    /* Bucket movement (QoQ) */
+    .movement-grid-wrap { display: grid; gap: 16px; }
+    .move-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .move-kpi {
+      border: 1px solid var(--cp-border); border-radius: 10px; padding: 10px 14px;
+      background: var(--cp-surface); border-left-width: 3px;
+    }
+    .move-kpi__val { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; font-variant-numeric: tabular-nums; }
+    .move-kpi__lbl { font-size: 11px; color: var(--cp-text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .move-kpi--up   { border-left-color: var(--bucket-maintain); }
+    .move-kpi--up   .move-kpi__val { color: var(--bucket-maintain); }
+    .move-kpi--down { border-left-color: var(--bucket-risk); }
+    .move-kpi--down .move-kpi__val { color: var(--bucket-risk); }
+    .move-kpi--flat { border-left-color: var(--cp-border-strong); }
+    .move-kpi--new  { border-left-color: var(--cp-link); }
+    .move-kpi--new  .move-kpi__val { color: var(--cp-link); }
+    .movement-cols { display: grid; grid-template-columns: 1fr 220px; gap: 18px; align-items: start; }
+    @media (max-width: 920px) { .movement-cols { grid-template-columns: 1fr; } .move-kpis { grid-template-columns: repeat(2,1fr); } }
+    .movement-grid {
+      display: grid; grid-template-columns: 130px repeat(3, 1fr); gap: 6px;
+    }
+    .mv-corner { font-size: 10.5px; color: var(--cp-text-soft); display: flex; align-items: flex-end; padding: 4px; }
+    .mv-colhead, .mv-rowhead {
+      font-size: 11px; font-weight: 600; color: var(--cp-text-muted);
+      padding: 6px 8px; border-bottom: 2px solid transparent;
+    }
+    .mv-rowhead { display: flex; align-items: center; border-bottom: none; border-left: 3px solid transparent; }
+    .mv-head-maintain  { border-color: var(--bucket-maintain); }
+    .mv-head-expansion { border-color: var(--bucket-expansion); }
+    .mv-head-risk      { border-color: var(--bucket-risk); }
+    .mv-cell {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 46px; border-radius: 8px; font-weight: 600; font-variant-numeric: tabular-nums;
+      border: 1px solid var(--cp-border); color: var(--cp-text);
+    }
+    .mv-diag { background: color-mix(in srgb, var(--cp-text-muted) calc(var(--i) * 22%), var(--cp-surface)); }
+    .mv-up   { background: color-mix(in srgb, var(--bucket-maintain) calc(var(--i) * 55%), var(--cp-surface)); }
+    .mv-down { background: color-mix(in srgb, var(--bucket-risk) calc(var(--i) * 55%), var(--cp-surface)); }
+    .movement-trend-wrap { border-left: 1px solid var(--cp-border); padding-left: 18px; }
+    .movement-trend { display: flex; gap: 10px; align-items: flex-end; height: 150px; }
+    .tr-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; }
+    .tr-stack { flex: 1; width: 100%; display: flex; flex-direction: column; justify-content: flex-end; border-radius: 4px 4px 0 0; overflow: hidden; }
+    .tr-seg { width: 100%; }
+    .tr-maintain  { background: var(--bucket-maintain); }
+    .tr-expansion { background: var(--bucket-expansion); }
+    .tr-risk      { background: var(--bucket-risk); }
+    .tr-label { font-size: 11px; color: var(--cp-text-muted); }
+    .tr-total { font-size: 11px; font-weight: 600; color: var(--cp-text); font-variant-numeric: tabular-nums; }
+    .tr-col--cur .tr-label { color: var(--cp-accent); font-weight: 700; }
+    .movement-trend-cap { font-size: 10.5px; color: var(--cp-text-soft); margin-top: 8px; }
+
+    /* Region comparison stacked bar */
+    .region-mix {
+      display: grid;
+      gap: 14px;
+      margin-top: 4px;
+    }
+    .region-mix__row {
+      display: grid;
+      grid-template-columns: 80px 1fr 80px;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+    }
+    .region-mix__name {
+      color: var(--cp-text);
+      font-weight: 500;
+    }
+    .region-mix__total {
+      text-align: right;
+      color: var(--cp-text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .region-mix__total strong {
+      color: var(--cp-text);
+      font-weight: 600;
+    }
+    .region-mix__track {
+      display: flex;
+      height: 22px;
+      background: var(--cp-surface-soft);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+    .region-mix__seg {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      transition: width 0.2s ease;
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .region-mix__seg--expansion { background: var(--bucket-expansion); color: #3a1f00; }
+    .region-mix__seg--risk { background: var(--bucket-risk); }
+    .region-mix__seg--maintain { background: var(--bucket-maintain); }
+    .region-mix__seg--action { background: var(--bucket-action); }
+    html[data-theme="dark"] .region-mix__seg--expansion { color: #1a1000; }
+    .region-mix__legend {
+      display: flex;
+      gap: 16px;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--cp-text-muted);
+    }
+    .region-mix__legend .swatch { width: 10px; height: 10px; }
+
+    /* Clickable globe region picker */
+    .region-explorer {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      flex-wrap: wrap;
+    }
+    .region-explorer .region-mix { flex: 1 1 360px; margin-top: 0; }
+    .globe-pick {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      width: 200px;
+    }
+    .globe { width: 196px; height: 196px; display: block; }
+    .globe-sphere { fill: url(#globeOcean); stroke: var(--cp-border-strong); stroke-width: 0.75; }
+    .globe-grat { fill: none; stroke: var(--globe-grat); stroke-width: 0.6; opacity: 0.55; }
+    .globe-region { cursor: pointer; outline: none; }
+    .globe-region path {
+      fill: var(--globe-land);
+      stroke: var(--globe-land-edge);
+      stroke-width: 0.6;
+      transition: fill 0.15s ease, stroke 0.15s ease;
+    }
+    .globe-region:hover path { fill: var(--globe-land-hover); }
+    .globe-region:focus-visible path { stroke: var(--cp-accent); stroke-width: 1.4; }
+    .globe.has-active .globe-region path { fill: var(--globe-land-dim); }
+    .globe-region.is-active path,
+    .globe.has-active .globe-region.is-active path { fill: var(--cp-accent); stroke: var(--cp-accent-hover); stroke-width: 1; }
+    .globe-region.is-active:hover path { fill: var(--cp-accent-hover); }
+    .globe-pick__cap {
+      font-size: 11px;
+      color: var(--cp-text-muted);
+      text-align: center;
+      line-height: 1.35;
+    }
+    .globe-pick__cap strong { color: var(--cp-text); font-weight: 600; }
+
+    /* Top-N table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th, td {
+      padding: 9px 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--cp-border);
+    }
+    th {
+      font-weight: 600;
+      color: var(--cp-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      font-size: 10px;
+      background: var(--cp-surface-soft);
+    }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    tr:last-child td { border-bottom: none; }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 600;
+      color: white;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+    .pill-maintain  { background: var(--bucket-maintain); }
+    .pill-expansion { background: var(--bucket-expansion); color: #000; }
+    .pill-action    { background: var(--bucket-action); }
+    .pill-risk      { background: var(--bucket-risk); }
+
+    /* Footer */
+    footer {
+      margin-top: 28px;
+      padding-top: 16px;
+      border-top: 1px solid var(--cp-border);
+      font-size: 11px;
+      color: var(--cp-text-muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    code {
+      font-family: Consolas, "Courier New", Courier, monospace;
+      background: var(--cp-surface-soft);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+
+    /* Drilldown affordance */
+    [data-drill] {
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease;
+    }
+    [data-drill]:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(31, 56, 100, 0.15);
+    }
+    .region-mix__seg[data-bucket] { cursor: pointer; }
+    .region-mix__seg[data-bucket]:hover { filter: brightness(1.08); }
+
+    /* Drilldown modal */
+    .drill-modal {
+      position: fixed; inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      display: none;
+      align-items: flex-start; justify-content: center;
+      z-index: 1000;
+      padding: 40px 20px;
+      overflow-y: auto;
+    }
+    .drill-modal.is-open { display: flex; }
+    .drill-modal__panel {
+      background: var(--cp-surface);
+      width: min(1280px, 100%);
+      border-radius: 8px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      max-height: calc(100vh - 80px);
+    }
+    .drill-modal__head {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 20px;
+      background: var(--cp-banner, #1f3864);
+      color: #fff;
+    }
+    .drill-modal__title { font-size: 16px; font-weight: 600; flex: 1; }
+    .drill-modal__meta { font-size: 12px; opacity: 0.85; }
+    .drill-modal__close {
+      background: rgba(255,255,255,0.15); color: #fff; border: 0;
+      width: 28px; height: 28px; border-radius: 4px;
+      cursor: pointer; font-size: 16px; line-height: 1;
+    }
+    .drill-modal__close:hover { background: rgba(255,255,255,0.30); }
+    .drill-modal__toolbar {
+      display: flex; gap: 8px; align-items: center;
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--cp-border);
+      font-size: 12px; color: var(--cp-text-muted);
+    }
+    .drill-modal__search {
+      flex: 1; max-width: 320px;
+      padding: 6px 10px;
+      border: 1px solid var(--cp-border);
+      border-radius: 4px;
+      font-family: inherit; font-size: 12px;
+    }
+    .drill-modal__btn {
+      padding: 6px 12px;
+      border: 1px solid var(--cp-border);
+      border-radius: 4px;
+      background: var(--cp-surface);
+      color: var(--cp-text);
+      font: inherit; font-size: 12px; font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .drill-modal__btn:hover { background: var(--cp-surface-soft); border-color: var(--cp-border-strong); }
+    .drill-modal__btn:focus-visible { outline: 2px solid var(--cp-accent); outline-offset: 1px; }
+    .pbi-banner__reset {
+      padding: 4px 12px;
+      background: rgba(255,255,255,0.12);
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 2px;
+      font: inherit; font-size: 12px; font-weight: 500;
+      cursor: pointer;
+      margin-left: 4px;
+    }
+    .pbi-banner__reset:hover { background: rgba(255,255,255,0.22); border-color: #ffffff; }
+    .pbi-banner__reset:disabled { opacity: 0.45; cursor: default; }
+    .atrisk-row { cursor: pointer; }
+    .atrisk-row:hover td { background: var(--cp-surface-soft); }
+    .drill-modal__body { overflow: auto; }
+    .drill-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .drill-table th, .drill-table td { padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--cp-border); }
+    .drill-table th {
+      position: sticky; top: 0;
+      background: var(--cp-surface-soft);
+      font-weight: 600; cursor: pointer; user-select: none;
+      white-space: nowrap;
+    }
+    .drill-table th:hover { background: var(--cp-border); }
+    .drill-table td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .drill-table tr:hover td { background: var(--cp-surface-soft); }
+    .drill-pill {
+      display: inline-block; padding: 1px 6px; border-radius: 3px;
+      font-size: 10px; font-weight: 600; color: #fff;
+      letter-spacing: 0.02em;
+    }
+    .drill-pill--maintain  { background: var(--bucket-maintain); }
+    .drill-pill--expansion { background: var(--bucket-expansion); color: #3a1f00; }
+    .drill-pill--action    { background: var(--bucket-action); }
+    .drill-pill--risk      { background: var(--bucket-risk); }
+  </style>
+  <!-- Polish layer for the React copy (separate file; original stylesheet untouched). -->
+  <style data-enhance="react">
+/* ============================================================================
+ * exec-portfolio.enhance.css — visual polish layer for the REACT copy only.
+ * Loaded AFTER the original stylesheet (so it wins ties) and built entirely on
+ * the original's CSS custom properties (--cp-*, --bucket-*) so every rule themes
+ * correctly in both light and dark. Purely cosmetic: shadows, gradients, radii,
+ * transitions, entrance motion. Never touches JS-driven geometry (donut arc
+ * dash arrays, region-mix segment widths, trend-bar heights, mv-cell --i).
+ * ========================================================================== */
+
+/* ---- Ambient background: soft brand washes over the flat base ------------- */
+body {
+  background:
+    radial-gradient(1100px 560px at 100% -8%, color-mix(in srgb, var(--cp-accent) 8%, transparent), transparent 60%),
+    radial-gradient(900px 480px at -8% 2%, color-mix(in srgb, var(--cp-link) 7%, transparent), transparent 55%),
+    var(--cp-bg);
+  background-attachment: fixed;
+}
+
+/* ---- Refined font rendering ---------------------------------------------- */
+body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+
+/* ---- Sticky, gradient report banner (filters stay reachable on scroll) ---- */
+.pbi-banner {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: linear-gradient(120deg, #1f3864 0%, #294a82 100%);
+  box-shadow: 0 6px 22px -10px rgba(8, 18, 40, 0.55);
+  backdrop-filter: saturate(1.1);
+}
+html[data-theme="dark"] .pbi-banner {
+  background: linear-gradient(120deg, #16264a 0%, #1d335f 100%);
+}
+.pbi-banner__title { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); }
+
+/* Slicer selects: softer, with depth + hover feedback */
+.pbi-filter select {
+  border-radius: 7px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  transition: box-shadow 0.16s ease, transform 0.05s ease;
+}
+.pbi-filter select:hover { box-shadow: 0 3px 8px rgba(0, 0, 0, 0.26); }
+.pbi-filter select:active { transform: translateY(1px); }
+.pbi-banner__reset { border-radius: 7px; transition: background 0.16s ease, border-color 0.16s ease, transform 0.05s ease; }
+.pbi-banner__reset:not(:disabled):active { transform: translateY(1px); }
+
+/* ---- Page entrance: staggered fade-up for each top-level block ------------ */
+@keyframes cpFadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.page > * { animation: cpFadeUp 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+.page > *:nth-child(1) { animation-delay: 0.02s; }
+.page > *:nth-child(2) { animation-delay: 0.06s; }
+.page > *:nth-child(3) { animation-delay: 0.10s; }
+.page > *:nth-child(4) { animation-delay: 0.14s; }
+.page > *:nth-child(5) { animation-delay: 0.18s; }
+.page > *:nth-child(6) { animation-delay: 0.22s; }
+.page > *:nth-child(7) { animation-delay: 0.26s; }
+.page > *:nth-child(8) { animation-delay: 0.30s; }
+.page > *:nth-child(9) { animation-delay: 0.34s; }
+
+/* ---- Header: subtle accent underline under the title block ---------------- */
+header { position: relative; }
+header::after {
+  content: "";
+  position: absolute;
+  left: 0; bottom: -1px;
+  width: 64px; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--cp-accent), transparent);
+}
+.title-block h1 { letter-spacing: -0.2px; }
+
+/* ---- Cards: deeper, softer elevation + branded heading accent ------------- */
+.card {
+  border-radius: 18px;
+  border-color: color-mix(in srgb, var(--cp-border) 72%, transparent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 16px 40px -20px rgba(0, 0, 0, 0.22);
+  transition: box-shadow 0.28s ease, border-color 0.28s ease;
+}
+.card:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05), 0 26px 56px -22px rgba(0, 0, 0, 0.32);
+  border-color: color-mix(in srgb, var(--cp-accent) 22%, var(--cp-border));
+}
+.card h2 { position: relative; padding-left: 14px; }
+.card h2::before {
+  content: "";
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 5px; height: 13px; border-radius: 3px;
+  background: linear-gradient(var(--cp-accent), var(--cp-accent-hover));
+}
+
+/* ---- KPI tiles: colored top accent by meaning + hover lift ---------------- */
+.kpi {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 28px -18px rgba(0, 0, 0, 0.24);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.kpi::before {
+  content: "";
+  position: absolute; left: 0; right: 0; top: 0; height: 3px;
+  opacity: 0.9;
+  background: var(--cp-accent);
+}
+.kpi-strip .kpi:nth-child(2)::before { background: var(--bucket-expansion); }
+.kpi-strip .kpi:nth-child(3)::before { background: var(--bucket-risk); }
+.kpi-strip .kpi:nth-child(5)::before { background: var(--bucket-action); }
+.kpi[data-drill] { cursor: pointer; }
+.kpi[data-drill]:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.06), 0 24px 48px -20px rgba(0, 0, 0, 0.34);
+}
+.kpi .value { font-size: 24px; font-variant-numeric: tabular-nums; }
+
+/* ---- Donut: soft drop shadow for separation ------------------------------ */
+svg.donut { filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12)); overflow: visible; }
+.donut-center-text .big { letter-spacing: -0.4px; }
+
+/* ---- Subgroup breakdown: glossy bar fills + smoother rows ----------------- */
+.leaf .bar-track { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cp-border) 55%, transparent); }
+.leaf .bar-fill { background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.18), rgba(0, 0, 0, 0.05)); transition: width 0.4s cubic-bezier(0.2, 0.7, 0.3, 1); }
+.leaf { border-radius: 8px; transition: background 0.14s ease, transform 0.08s ease; padding: 4px 6px; margin: 0 -6px; }
+.leaf[data-drill]:hover { background: color-mix(in srgb, var(--cp-accent) 6%, transparent); transform: translateX(2px); }
+
+/* ---- Region mix: inset track + glossy segments (widths stay JS-driven) ---- */
+.region-mix__track {
+  border-radius: 7px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cp-border) 55%, transparent), inset 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.region-mix__track .region-mix__seg[data-bucket] {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.16), rgba(0, 0, 0, 0.07));
+}
+.region-mix__track .region-mix__seg[data-bucket]:hover { filter: brightness(1.1) saturate(1.05); }
+
+/* ---- Clickable globe: lift + drop shadow --------------------------------- */
+.globe { filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.16)); }
+.globe-region path { transition: fill 0.15s ease, stroke 0.15s ease; }
+
+/* ---- Decision tree: nodes/leaves with a touch more depth ----------------- */
+.dtree-node { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
+.dtree-leaf { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
+.dtree-leaf:hover { box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.3); }
+
+/* ---- Movement matrix: rounded cells with hover pop (bg stays JS-driven) --- */
+.mv-cell { border-radius: 9px; transition: transform 0.12s ease, box-shadow 0.12s ease; }
+.mv-cell:hover { transform: translateY(-1px); box-shadow: 0 8px 16px -8px rgba(0, 0, 0, 0.32); }
+.move-kpi { border-radius: 12px; box-shadow: 0 10px 24px -18px rgba(0, 0, 0, 0.3); transition: transform 0.16s ease, box-shadow 0.16s ease; }
+.move-kpi:hover { transform: translateY(-2px); box-shadow: 0 16px 32px -18px rgba(0, 0, 0, 0.4); }
+
+/* ---- Trend strip: glossy stacked bars (heights stay JS-driven) ----------- */
+.tr-stack { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cp-border) 45%, transparent); }
+.tr-stack .tr-seg { background-image: linear-gradient(rgba(255, 255, 255, 0.16), rgba(0, 0, 0, 0.06)); }
+.tr-col { transition: transform 0.14s ease; }
+.tr-col:hover { transform: translateY(-2px); }
+
+/* ---- KPI strip legend + pills: tidy shadows ------------------------------ */
+.legend { box-shadow: 0 10px 26px -20px rgba(0, 0, 0, 0.25); }
+.pill { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18); }
+
+/* ---- Top-N table: zebra striping + smoother hover ------------------------ */
+table tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--cp-text) 3%, transparent); }
+.atrisk-row { transition: background 0.12s ease; }
+.atrisk-row:hover td { background: color-mix(in srgb, var(--cp-accent) 8%, transparent); }
+
+/* ---- Drill modal: blurred backdrop + pop-in panel ------------------------ */
+.drill-modal { background: color-mix(in srgb, #0b1220 58%, transparent); backdrop-filter: blur(4px); }
+.drill-modal__panel {
+  border-radius: 16px;
+  box-shadow: 0 36px 90px -24px rgba(0, 0, 0, 0.62);
+  animation: cpPop 0.24s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+@keyframes cpPop { from { opacity: 0; transform: translateY(12px) scale(0.985); } to { opacity: 1; transform: none; } }
+.drill-modal__head { background: linear-gradient(120deg, #1f3864 0%, #294a82 100%); }
+html[data-theme="dark"] .drill-modal__head { background: linear-gradient(120deg, #16264a 0%, #1d335f 100%); }
+.drill-modal__close { transition: background 0.15s ease, transform 0.06s ease; }
+.drill-modal__close:active { transform: scale(0.92); }
+.drill-table tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--cp-text) 2.5%, transparent); }
+.drill-table th { backdrop-filter: blur(2px); }
+.drill-chip { transition: background 0.14s ease, border-color 0.14s ease, transform 0.06s ease; }
+.drill-chip:active { transform: translateY(1px); }
+
+/* ---- Custom scrollbars (WebKit/Chromium) --------------------------------- */
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--cp-text) 28%, transparent) transparent; }
+*::-webkit-scrollbar { width: 11px; height: 11px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--cp-text) 22%, transparent);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--cp-text) 36%, transparent); background-clip: padding-box; }
+
+/* ---- Consistent keyboard focus ring -------------------------------------- */
+a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible,
+.globe-region:focus-visible, [data-drill]:focus-visible {
+  outline: 2px solid var(--cp-accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---- Footer: gentle separation ------------------------------------------- */
+footer { opacity: 0.92; }
+
+/* ---- Respect reduced-motion preferences ---------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React 18 + Babel standalone (in-browser JSX). Self-contained: no build step to view. -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+  <script src="tpid-atoms.js"></script>
+
+  <script type="text/babel" data-presets="react">
+/* React port of the Exec Portfolio dashboard UX.
+ * Authored as JSX; build-exec-react.js inlines this into exec-portfolio-react.html
+ * together with the ORIGINAL stylesheet (so styling never drifts from exec-portfolio.html).
+ * Pure data-layer (classifier, taxonomy, aggregation, movement, drill) mirrors the
+ * vanilla original exactly; only the rendering + interaction layer is now React.
+ */
+const { useState, useMemo, useEffect, useRef, useCallback } = React;
+
+/* ============================ DATA LAYER ============================ */
+const ATOMS = (typeof window !== 'undefined' && window.ATOMS_DATA) || { thresholds: {}, rows: [] };
+const THR = Object.assign(
+  { depth: 0.45, pen: 0.50, actEngaged: 0.60, actShallow: 0.20, minSeats: 50000, expiringMin: 0 },
+  ATOMS.thresholds || {}
+);
+
+const TAXONOMY = (() => {
+  const quarters = new Set(), regions = new Set(), segments = new Set();
+  const areasByRegion = {}, subsByRegionArea = {};
+  for (const r of ATOMS.rows || []) {
+    if (r.quarter) quarters.add(r.quarter);
+    if (r.region) regions.add(r.region);
+    if (r.segment) segments.add(r.segment);
+    if (r.region && r.area) {
+      (areasByRegion[r.region] || (areasByRegion[r.region] = new Set())).add(r.area);
+      const key = r.region + '|' + r.area;
+      (subsByRegionArea[key] || (subsByRegionArea[key] = new Set())).add(r.subRegion || '');
+    }
+  }
+  const sortStr = (a, b) => String(a).localeCompare(String(b));
+  const toSorted = (s) => Array.from(s).sort(sortStr);
+  const areasByRegionArr = {};
+  for (const [k, v] of Object.entries(areasByRegion)) areasByRegionArr[k] = toSorted(v);
+  const subsByRegionAreaArr = {};
+  for (const [k, v] of Object.entries(subsByRegionArea)) subsByRegionAreaArr[k] = toSorted(v).filter(Boolean);
+  return {
+    quarters: toSorted(quarters), regions: toSorted(regions), segments: toSorted(segments),
+    areasByRegion: areasByRegionArr, subsByRegionArea: subsByRegionAreaArr
+  };
+})();
+
+const classify = (row) => {
+  const depth = row.pau ? row.pru / row.pau : 0;
+  const pen = row.eligibleSeats ? row.pau / row.eligibleSeats : 0;
+  const useFreq = row.pau ? row.mau / row.pau : 0;
+  const inScope = row.eligibleSeats >= THR.minSeats && row.expiringT12 > THR.expiringMin;
+  if (!inScope) return null;
+  if (depth >= THR.depth && pen > THR.pen) return { bucket: 'maintain', sub: 'maintain' };
+  if (depth >= THR.depth) {
+    const hasPipe = row.pipeM > 0, hasChat = row.unpaidChat > 0;
+    const sub = (hasPipe && hasChat) ? 'pipe_chat' : hasPipe ? 'pipe' : hasChat ? 'chat' : 'neither';
+    return { bucket: 'expansion', sub };
+  }
+  if (useFreq >= THR.actEngaged && depth < THR.actShallow) return { bucket: 'risk', sub: 'bestpractice' };
+  if (useFreq >= THR.actEngaged) return { bucket: 'risk', sub: 'stickiness' };
+  return { bucket: 'risk', sub: 'reengage' };
+};
+
+const LATEST_Q_BY_TPID = (() => {
+  const rank = { Q1: 1, Q2: 2, Q3: 3, Q4: 4 };
+  const map = Object.create(null);
+  for (const r of ATOMS.rows || []) {
+    const cur = map[r.tpid];
+    if (!cur || (rank[r.quarter] || 0) > (rank[cur] || 0)) map[r.tpid] = r.quarter;
+  }
+  return map;
+})();
+
+const QORDER = ['Q1', 'Q2', 'Q3', 'Q4'];
+const ROW_BY_TPID_Q = (() => {
+  const map = Object.create(null);
+  for (const r of ATOMS.rows || []) (map[r.tpid] || (map[r.tpid] = Object.create(null)))[r.quarter] = r;
+  return map;
+})();
+
+const rowMatches = (r, f, skip) => {
+  if ((!skip || skip !== 'quarter') && f.quarter) {
+    if (f.quarter === 'All') { if (LATEST_Q_BY_TPID[r.tpid] !== r.quarter) return false; }
+    else if (r.quarter !== f.quarter) return false;
+  }
+  if ((!skip || skip !== 'region') && f.region && f.region !== 'All' && r.region !== f.region) return false;
+  if ((!skip || skip !== 'area') && f.area && f.area !== 'All' && r.area !== f.area) return false;
+  if ((!skip || skip !== 'subregion') && f.subregion && f.subregion !== 'All' && r.subRegion !== f.subregion) return false;
+  if ((!skip || skip !== 'segment') && f.segment && f.segment !== 'All' && r.segment !== f.segment) return false;
+  return true;
+};
+
+const SUBGROUPS = {
+  maintain: [
+    { key: 'maintain', label: 'Maintain', hint: 'Healthy \u2014 steward the renewal', play: 'Steward renewal \u00b7 CSU' }
+  ],
+  expansion: [
+    { key: 'pipe_chat', label: 'Pipe + Chat', hint: 'Pipeline covered & unpaid-chat signal', play: 'Land pipeline + convert chat \u00b7 AE + STU' },
+    { key: 'pipe', label: 'Pipe only', hint: 'Pipeline within T-6 (CP+CC)', play: 'Land pipeline \u00b7 AE' },
+    { key: 'chat', label: 'Chat only', hint: 'Unpaid-chat whitespace \u2014 AE open', play: 'NPSA whitespace motion \u00b7 AE' },
+    { key: 'neither', label: 'No signal yet', hint: 'Depth-only \u2014 proactive outreach', play: 'Proactive outreach \u00b7 CSU + STU' }
+  ],
+  risk: [
+    { key: 'bestpractice', label: 'Best-practice expansion', hint: 'Frequent (MAU/PAU \u2265 60%), very shallow (PRU/PAU < 20%)', play: 'Drive best-practice expansion / new use cases \u00b7 CSU' },
+    { key: 'stickiness', label: 'Drive stickiness', hint: 'Frequent (MAU/PAU \u2265 60%), shallow (PRU/PAU 20\u201345%)', play: 'Drive stickiness / embed in meaningful workflows \u00b7 CSU' },
+    { key: 'reengage', label: 'Re-engage', hint: 'Disengaged (MAU/PAU < 60%)', play: 'Re-engage / champion play \u00b7 CSU \u2192 ATU' }
+  ]
+};
+const BUCKET_OF_SUB = {}, SUB_LABEL = {}, SUB_HINT = {}, SUB_PLAY = {}, SUB_KEYS = [];
+Object.entries(SUBGROUPS).forEach(([bucket, subs]) => subs.forEach((s) => {
+  BUCKET_OF_SUB[s.key] = bucket; SUB_LABEL[s.key] = s.label;
+  SUB_HINT[s.key] = s.hint; SUB_PLAY[s.key] = s.play; SUB_KEYS.push(s.key);
+}));
+const BUCKET_LABEL = { maintain: 'Maintain', expansion: 'Expansion Ready', risk: 'At Risk' };
+const BUCKET_RANK = { risk: 0, expansion: 1, maintain: 2 };
+
+const aggregate = (filter, skip) => {
+  const acc = { inScope: 0, maintain: 0, expansion: 0, risk: 0, pipeM: 0, chatSeats: 0, subs: {}, subSeats: {} };
+  for (let i = 0; i < SUB_KEYS.length; i++) { acc.subs[SUB_KEYS[i]] = 0; acc.subSeats[SUB_KEYS[i]] = 0; }
+  const rows = ATOMS.rows || [];
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    if (!rowMatches(r, filter, skip)) continue;
+    const c = classify(r);
+    if (!c) continue;
+    acc.inScope++; acc[c.bucket]++; acc.subs[c.sub]++;
+    acc.subSeats[c.sub] += r.paidSeats || 0;
+    acc.pipeM += r.pipeM || 0; acc.chatSeats += r.unpaidChat || 0;
+  }
+  return acc;
+};
+
+const movementMatches = (r, f) =>
+  (f.region === 'All' || r.region === f.region) &&
+  (f.area === 'All' || r.area === f.area) &&
+  (f.subregion === 'All' || r.subRegion === f.subregion) &&
+  (f.segment === 'All' || r.segment === f.segment);
+
+const computeMovement = (f) => {
+  const curQ = (f.quarter && f.quarter !== 'All') ? f.quarter : QORDER[QORDER.length - 1];
+  const ci = QORDER.indexOf(curQ);
+  const prevQ = ci > 0 ? QORDER[ci - 1] : null;
+  const order = ['maintain', 'expansion', 'risk'];
+  const mat = { maintain: { maintain: 0, expansion: 0, risk: 0 }, expansion: { maintain: 0, expansion: 0, risk: 0 }, risk: { maintain: 0, expansion: 0, risk: 0 } };
+  let improved = 0, slipped = 0, stable = 0, fresh = 0;
+  if (prevQ) {
+    for (const tpid in ROW_BY_TPID_Q) {
+      const cur = ROW_BY_TPID_Q[tpid][curQ];
+      if (!cur || !movementMatches(cur, f)) continue;
+      const cc = classify(cur);
+      if (!cc) continue;
+      const prev = ROW_BY_TPID_Q[tpid][prevQ];
+      const pc = prev ? classify(prev) : null;
+      if (!pc) { fresh++; continue; }
+      mat[pc.bucket][cc.bucket]++;
+      const delta = BUCKET_RANK[cc.bucket] - BUCKET_RANK[pc.bucket];
+      if (delta > 0) improved++; else if (delta < 0) slipped++; else stable++;
+    }
+  }
+  const maxCell = Math.max(1, ...order.flatMap((p) => order.map((c) => mat[p][c])));
+  const trend = QORDER.map((q) => {
+    const a = { maintain: 0, expansion: 0, risk: 0, total: 0 };
+    for (const tpid in ROW_BY_TPID_Q) {
+      const r = ROW_BY_TPID_Q[tpid][q];
+      if (!r || !movementMatches(r, f)) continue;
+      const c = classify(r);
+      if (!c) continue;
+      a[c.bucket]++; a.total++;
+    }
+    return Object.assign({ q }, a);
+  });
+  const maxT = Math.max(1, ...trend.map((t) => t.total));
+  return { curQ, prevQ, order, mat, improved, slipped, stable, fresh, maxCell, trend, maxT };
+};
+
+const computeAtRisk = (f) => {
+  const rows = ATOMS.rows || [];
+  const matches = [];
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    if (!rowMatches(r, f)) continue;
+    const c = classify(r);
+    if (!c || c.bucket !== 'risk') continue;
+    matches.push({ row: r, sub: c.sub });
+  }
+  matches.sort((a, b) => (b.row.eligibleSeats || 0) - (a.row.eligibleSeats || 0));
+  const scopeBits = [];
+  if (f.quarter !== 'All') scopeBits.push(f.quarter);
+  if (f.region !== 'All') scopeBits.push(f.region);
+  if (f.area !== 'All') scopeBits.push(f.area);
+  if (f.subregion !== 'All') scopeBits.push(f.subregion);
+  if (f.segment !== 'All') scopeBits.push(f.segment);
+  return { top: matches.slice(0, 10), scopeBits };
+};
+
+const buildDrill = (descriptor, regionOverride, curFilter) => {
+  const [kind, val] = descriptor.split(':');
+  const isAccount = kind === 'account';
+  const f = isAccount
+    ? { quarter: 'All', region: 'All', area: 'All', subregion: 'All', segment: 'All' }
+    : Object.assign({}, curFilter);
+  if (regionOverride && regionOverride !== 'All') f.region = regionOverride;
+  const subBucket = kind === 'sub' ? BUCKET_OF_SUB[val] : null;
+  const rows = [];
+  for (let i = 0; i < (ATOMS.rows || []).length; i++) {
+    const r = ATOMS.rows[i];
+    if (!rowMatches(r, f)) continue;
+    const c = classify(r);
+    if (!c) continue;
+    if (kind === 'bucket' && c.bucket !== val) continue;
+    if (kind === 'sub' && c.sub !== val) continue;
+    if (kind === 'account' && String(r.tpid) !== String(val)) continue;
+    rows.push(Object.assign({}, r, { _bucket: c.bucket, _sub: c.sub, _subLabel: SUB_LABEL[c.sub] || c.sub }));
+  }
+  const scopeBits = [];
+  if (f.quarter !== 'All') scopeBits.push(f.quarter);
+  if (f.region !== 'All') scopeBits.push(f.region);
+  if (f.area !== 'All') scopeBits.push(f.area);
+  if (f.subregion !== 'All') scopeBits.push(f.subregion);
+  if (f.segment !== 'All') scopeBits.push(f.segment);
+  const scope = scopeBits.length ? ' \u00b7 ' + scopeBits.join(' \u00b7 ') : '';
+  let label;
+  if (kind === 'all') label = 'All in-scope accounts';
+  else if (kind === 'bucket') label = BUCKET_LABEL[val] || val;
+  else if (kind === 'sub') label = (BUCKET_LABEL[subBucket] || '') + ' \u2014 ' + (SUB_LABEL[val] || val);
+  else if (kind === 'account') label = (rows[0] && rows[0].name) ? (rows[0].name + ' \u00b7 TPID ' + val) : ('TPID ' + val);
+  else label = descriptor;
+  return { kind, val, rows, label, scope, bucketForChips: kind === 'bucket' ? val : null, searchSeed: isAccount ? String(val) : '' };
+};
+
+/* ---- formatters ---- */
+const fmtInt = (n) => Math.round(n).toLocaleString('en-US');
+const fmtMoney = (m) => {
+  if (m <= -1) return `-$${Math.abs(m).toFixed(2)}M`;
+  if (m < 0) return `-$${(Math.abs(m) * 1000).toFixed(0)}K`;
+  if (m >= 1000) return `$${(m / 1000).toFixed(2)}B`;
+  if (m >= 10) return `$${m.toFixed(1)}M`;
+  if (m >= 1) return `$${m.toFixed(2)}M`;
+  return `$${(m * 1000).toFixed(0)}K`;
+};
+const fmtSeats = (n) => {
+  if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
+  return fmtInt(n);
+};
+const pct = (n, d) => d > 0 ? `${((n / d) * 100).toFixed(1)}%` : '0.0%';
+
+/* ---- threshold + meta labels ---- */
+const pctTxt = (v) => Math.round(v * 100) + '%';
+const THR_LABELS = {
+  depth: pctTxt(THR.depth), pen: pctTxt(THR.pen), eng: pctTxt(THR.actEngaged), shallow: pctTxt(THR.actShallow),
+  minseats: (THR.minSeats % 1000 === 0 ? (THR.minSeats / 1000) + 'k' : THR.minSeats.toLocaleString('en-US'))
+};
+const GEN_LABEL = (() => {
+  if (!ATOMS.generatedAt) return null;
+  const stamp = new Date(ATOMS.generatedAt);
+  return isNaN(stamp) ? ATOMS.generatedAt : stamp.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+})();
+
+/* ---- URL state sync ---- */
+const URL_KEYS = { quarter: 'q', region: 'r', area: 'a', subregion: 's', segment: 'g' };
+function initialFilter() {
+  const p = new URLSearchParams(window.location.search);
+  const quarters = TAXONOMY.quarters;
+  const defQ = quarters[quarters.length - 1] || 'All';
+  let quarter = p.get('q');
+  if (!(quarter === 'All' || quarters.includes(quarter))) quarter = defQ;
+  let region = p.get('r');
+  if (!(region && (region === 'All' || TAXONOMY.regions.includes(region)))) region = 'All';
+  let area = 'All';
+  if (region !== 'All') { const a = p.get('a'); if (a && (TAXONOMY.areasByRegion[region] || []).includes(a)) area = a; }
+  let subregion = 'All';
+  if (region !== 'All' && area !== 'All') { const s = p.get('s'); if (s && (TAXONOMY.subsByRegionArea[region + '|' + area] || []).includes(s)) subregion = s; }
+  let segment = p.get('g');
+  if (!(segment && (segment === 'All' || TAXONOMY.segments.includes(segment)))) segment = 'All';
+  return { quarter, region, area, subregion, segment };
+}
+function writeUrl(f) {
+  const params = new URLSearchParams(window.location.search);
+  const themeParam = params.get('clawpilotTheme');
+  const out = new URLSearchParams();
+  if (themeParam) out.set('clawpilotTheme', themeParam);
+  Object.keys(URL_KEYS).forEach((k) => { if (f[k] && f[k] !== 'All') out.set(URL_KEYS[k], f[k]); });
+  const qs = out.toString();
+  const url = window.location.pathname + (qs ? '?' + qs : '');
+  if (url !== window.location.pathname + window.location.search) window.history.replaceState(null, '', url);
+}
+const scopeLabel = (f) => {
+  const parts = [f.quarter, f.region, f.area, f.subregion, f.segment].filter((v) => v && v !== 'All');
+  return parts.length ? parts.join(' \u00b7 ') : 'all-up';
+};
+
+/* ============================ COMPONENTS ============================ */
+function Banner({ filter, areaOptions, subOptions, onQuarter, onRegion, onArea, onSub, onSegment, onReset, resetDisabled }) {
+  const opt = (arr) => arr.map((v) => <option key={v} value={v}>{v}</option>);
+  return (
+    <div className="pbi-banner">
+      <div className="pbi-banner__title">M365 Copilot &mdash; Usage</div>
+      <div className="pbi-banner__filters">
+        <div className="pbi-filter"><label htmlFor="f-time">Quarter:</label>
+          <select id="f-time" value={filter.quarter} onChange={(e) => onQuarter(e.target.value)}>{opt(['All', ...TAXONOMY.quarters])}</select></div>
+        <div className="pbi-filter"><label htmlFor="f-region">Region:</label>
+          <select id="f-region" value={filter.region} onChange={(e) => onRegion(e.target.value)}>{opt(['All', ...TAXONOMY.regions])}</select></div>
+        <div className="pbi-filter"><label htmlFor="f-area">Area:</label>
+          <select id="f-area" value={filter.area} onChange={(e) => onArea(e.target.value)}>{opt(['All', ...areaOptions])}</select></div>
+        <div className="pbi-filter"><label htmlFor="f-subregion">Sub Region:</label>
+          <select id="f-subregion" value={filter.subregion} onChange={(e) => onSub(e.target.value)}>{opt(['All', ...subOptions])}</select></div>
+        <div className="pbi-filter"><label htmlFor="f-segment">Segment:</label>
+          <select id="f-segment" value={filter.segment} onChange={(e) => onSegment(e.target.value)}>{opt(['All', ...TAXONOMY.segments])}</select></div>
+        <button type="button" className="pbi-banner__reset" title="Clear all filters" disabled={resetDisabled} onClick={onReset}>Reset</button>
+      </div>
+    </div>
+  );
+}
+
+function Header({ scope }) {
+  return (
+    <header>
+      <div className="title-block">
+        <h1>Copilot Customer Classification &mdash; Exec Portfolio</h1>
+        <p className="subtitle">Operationalises the Copilot customer-classification decision tree against a field usage model &middot; interactive demo</p>
+      </div>
+      <div className="meta-block">
+        <div>{GEN_LABEL
+          ? (<>Data extracted <strong>{GEN_LABEL}</strong> &middot; {scope}</>)
+          : (<>Last refreshed <strong>29 May 2026</strong> &middot; {scope}</>)}</div>
+        <div>Synthetic sample data &middot; public demo</div>
+      </div>
+    </header>
+  );
+}
+
+function Legend() {
+  return (
+    <div className="legend">
+      <div className="legend-item"><span className="swatch sw-maintain"></span> Maintain</div>
+      <div className="legend-item"><span className="swatch sw-expansion"></span> Expansion Ready</div>
+      <div className="legend-item"><span className="swatch sw-risk"></span> At Risk</div>
+      <div className="legend-item" style={{ marginLeft: 'auto', color: 'var(--cp-text-soft)' }}>
+        Entry filter: Eligible Seats &ge; 50,000 &middot; T-12 expiry signal &gt; 0
+      </div>
+    </div>
+  );
+}
+
+function KpiStrip({ d, openDrill }) {
+  const total = d.inScope;
+  return (
+    <div className="kpi-strip">
+      <div className="kpi" data-drill="all" title="Click to view all in-scope accounts" onClick={() => openDrill('all')}>
+        <div className="label">Accounts in scope</div>
+        <div className="value">{fmtInt(d.inScope)}</div>
+        <div className="sub">passing entry filter</div>
+      </div>
+      <div className="kpi" data-drill="bucket:expansion" title="Click to view Expansion Ready accounts" onClick={() => openDrill('bucket:expansion')}>
+        <div className="label">Expansion-ready</div>
+        <div className="value" style={{ color: 'var(--bucket-expansion)' }}>{pct(d.expansion, total)}</div>
+        <div className="sub">{fmtInt(d.expansion)} accounts &middot; Pipe / Chat plays</div>
+      </div>
+      <div className="kpi risk" data-drill="bucket:risk" title="Click to view At-Risk accounts" onClick={() => openDrill('bucket:risk')}>
+        <div className="label">At Risk</div>
+        <div className="value">{pct(d.risk, total)}</div>
+        <div className="sub">{fmtInt(d.risk)} accounts &middot; recommended actions</div>
+      </div>
+      <div className="kpi accent">
+        <div className="label">Committed pipeline</div>
+        <div className="value">{fmtMoney(d.pipeM)}</div>
+        <div className="sub">ACR committed in scope</div>
+      </div>
+      <div className="kpi warn">
+        <div className="label">Unpaid chat signal</div>
+        <div className="value">{fmtSeats(d.chatSeats)}</div>
+        <div className="sub">whitespace seats (Chat trigger)</div>
+      </div>
+    </div>
+  );
+}
+
+function DonutCard({ d, openDrill }) {
+  const total = d.inScope;
+  const mPct = total > 0 ? (d.maintain / total) * 100 : 0;
+  const ePct = total > 0 ? (d.expansion / total) * 100 : 0;
+  const rPct = total > 0 ? (d.risk / total) * 100 : 0;
+  const arc = (len, start) => ({
+    strokeDasharray: `${len.toFixed(2)} ${(100 - len).toFixed(2)}`,
+    strokeDashoffset: String(((25 - start + 100) % 100).toFixed(2))
+  });
+  const Row = ({ bucket, sw, name }) => (
+    <div className="row-item" data-drill={'bucket:' + bucket} title={`Click to view ${name} accounts`} onClick={() => openDrill('bucket:' + bucket)}>
+      <span className={'swatch ' + sw}></span>
+      <span className="name">{name}</span>
+      <span className="pct">{pct(d[bucket], total)}</span>
+      <span className="count">{fmtInt(d[bucket])}</span>
+    </div>
+  );
+  return (
+    <div className="card">
+      <h2>Classification mix</h2>
+      <p className="hint">By bucket &middot; {fmtInt(total)} in-scope accounts</p>
+      <div className="donut-wrap">
+        <div className="donut-center">
+          <svg className="donut" viewBox="0 0 42 42">
+            <circle cx="21" cy="21" r="15.915" fill="none" stroke="var(--cp-surface-soft)" strokeWidth="6" />
+            <circle cx="21" cy="21" r="15.915" fill="none" stroke="var(--bucket-maintain)" strokeWidth="6" style={arc(mPct, 0)} />
+            <circle cx="21" cy="21" r="15.915" fill="none" stroke="var(--bucket-expansion)" strokeWidth="6" style={arc(ePct, mPct)} />
+            <circle cx="21" cy="21" r="15.915" fill="none" stroke="var(--bucket-risk)" strokeWidth="6" style={arc(rPct, mPct + ePct)} />
+          </svg>
+          <div className="donut-center-text">
+            <div className="big">{fmtInt(total)}</div>
+            <div className="small">In scope</div>
+          </div>
+        </div>
+        <div className="donut-legend">
+          <Row bucket="maintain" sw="sw-maintain" name="Maintain" />
+          <Row bucket="expansion" sw="sw-expansion" name="Expansion Ready" />
+          <Row bucket="risk" sw="sw-risk" name="At Risk" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SubgroupCard({ d, openDrill }) {
+  const maxSub = Math.max(1, ...SUB_KEYS.map((k) => d.subs[k] || 0));
+  const bucketColor = { maintain: 'var(--bucket-maintain)', expansion: 'var(--bucket-expansion)', risk: 'var(--bucket-risk)' };
+  return (
+    <div className="card">
+      <h2>Breakdown by subgroup</h2>
+      <p className="hint">Each bucket split into its action subgroups &middot; click a row to drill</p>
+      <div className="leaf-list">
+        {Object.entries(SUBGROUPS).map(([bucket, subs]) => {
+          const bTotal = subs.reduce((s, sg) => s + (d.subs[sg.key] || 0), 0);
+          return (
+            <React.Fragment key={bucket}>
+              <div className="sub-group-head">
+                <span className={'swatch sw-' + bucket}></span>
+                {BUCKET_LABEL[bucket]} <span className="sub-group-total">{fmtInt(bTotal)}</span>
+              </div>
+              {subs.map((sg) => {
+                const v = d.subs[sg.key] || 0, s = d.subSeats[sg.key] || 0, w = (v / maxSub * 100).toFixed(1);
+                return (
+                  <div className="leaf" key={sg.key} data-drill={'sub:' + sg.key} title={`Drill into ${sg.label} accounts`} onClick={() => openDrill('sub:' + sg.key)}>
+                    <div className="meta"><span className="leaf-label">{sg.label}</span><span style={{ color: 'var(--cp-text-muted)' }}>{sg.hint}</span></div>
+                    <div><div className="count">{fmtInt(v)}</div><div className="count-sub">{fmtInt(s)} Copilot seats</div></div>
+                    <div className="bar-track"><div className="bar-fill" style={{ width: w + '%', background: bucketColor[bucket] }}></div></div>
+                  </div>
+                );
+              })}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+const GLOBE = [
+  { name: 'Americas', title: 'Americas', paths: ['M40,52 C46,44 58,44 64,50 C72,48 78,56 73,64 C78,70 72,78 63,76 C66,84 56,86 52,80 C44,84 36,78 40,70 C32,68 32,58 40,52 Z', 'M64,98 C72,95 80,101 78,112 C82,123 75,137 69,142 C68,153 59,152 60,141 C55,131 60,118 62,110 C59,105 60,99 64,98 Z'] },
+  { name: 'EMEA', title: 'EMEA \u2014 Europe, Middle East & Africa', paths: ['M97,52 C104,47 114,49 115,56 C120,59 115,67 107,65 C105,72 95,70 97,62 C92,60 91,55 97,52 Z', 'M105,72 C116,71 125,80 122,93 C126,105 117,118 111,127 C109,139 99,139 99,127 C93,116 96,100 99,90 C96,80 99,74 105,72 Z'] },
+  { name: 'APAC', title: 'APAC \u2014 Asia Pacific', paths: ['M120,58 C129,47 146,44 158,51 C171,52 178,62 172,71 C177,80 165,86 156,83 C147,90 134,87 131,79 C123,83 114,75 119,67 C115,64 115,60 120,58 Z', 'M150,112 C161,109 170,116 167,125 C169,132 158,136 150,131 C143,133 139,124 144,117 C144,113 146,112 150,112 Z'] }
+];
+
+function RegionCard({ regionRows, segment, region, onPickRegion, openDrill }) {
+  const maxRegionTotal = Math.max(1, ...regionRows.map((r) => r.inScope));
+  const scopeTxt = segment === 'All' ? '\u00b7 all segments' : `\u00b7 ${segment} only`;
+  const hasActive = region !== 'All';
+  return (
+    <div className="card">
+      <h2>Mix by Region <span style={{ fontWeight: 400, color: 'var(--cp-text-muted)', fontSize: '13px' }}>{scopeTxt}</span></h2>
+      <p className="hint">Expansion vs At-Risk split per region &middot; click the globe or a slicer to filter</p>
+      <div className="region-explorer">
+        <div className="globe-pick">
+          <svg className={'globe' + (hasActive ? ' has-active' : '')} viewBox="0 0 200 200" role="group" aria-label="Filter by region — click Americas, EMEA or APAC">
+            <defs>
+              <radialGradient id="globeOcean" cx="38%" cy="34%" r="72%">
+                <stop offset="0%" stopColor="var(--globe-ocean1)" />
+                <stop offset="100%" stopColor="var(--globe-ocean2)" />
+              </radialGradient>
+              <clipPath id="globeClip"><circle cx="100" cy="100" r="92" /></clipPath>
+            </defs>
+            <circle className="globe-sphere" cx="100" cy="100" r="92" />
+            <g className="globe-grat" clipPath="url(#globeClip)">
+              <line x1="100" y1="8" x2="100" y2="192" />
+              <ellipse cx="100" cy="100" rx="30" ry="92" />
+              <ellipse cx="100" cy="100" rx="61" ry="92" />
+              <line x1="8" y1="100" x2="192" y2="100" />
+              <ellipse cx="100" cy="100" rx="92" ry="30" />
+              <ellipse cx="100" cy="100" rx="92" ry="61" />
+            </g>
+            <g clipPath="url(#globeClip)">
+              {GLOBE.map((g) => {
+                const on = hasActive && region === g.name;
+                return (
+                  <g key={g.name} className={'globe-region' + (on ? ' is-active' : '')} data-region={g.name} role="button" tabIndex={0}
+                    aria-label={'Filter to ' + g.name} aria-pressed={on ? 'true' : 'false'}
+                    onClick={() => onPickRegion(g.name)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); onPickRegion(g.name); } }}>
+                    <title>{g.title}</title>
+                    {g.paths.map((d, i) => <path key={i} d={d} />)}
+                  </g>
+                );
+              })}
+            </g>
+          </svg>
+          <div className="globe-pick__cap">Click a region to filter &middot; click again to clear</div>
+        </div>
+        <div className="region-mix">
+          {regionRows.map((row) => {
+            const trackWidth = (row.inScope / maxRegionTotal) * 100;
+            const segs = [{ key: 'maintain', val: row.maintain }, { key: 'expansion', val: row.expansion }, { key: 'risk', val: row.risk }];
+            return (
+              <div className="region-mix__row" data-region-key={row.name} key={row.name}>
+                <div className="region-mix__name">{row.name}</div>
+                <div className="region-mix__track">
+                  {segs.map(({ key, val }) => {
+                    const segPct = row.inScope > 0 ? (val / row.inScope) * 100 : 0;
+                    const widthPct = (segPct * trackWidth / 100).toFixed(2);
+                    const label = val >= 50 ? fmtInt(val) : '';
+                    const title = `${key[0].toUpperCase()}${key.slice(1)}: ${fmtInt(val)} (${pct(val, row.inScope)})`;
+                    return <div key={key} className={'region-mix__seg region-mix__seg--' + key} data-bucket={key} style={{ width: widthPct + '%' }} title={title} onClick={() => openDrill('bucket:' + key, row.name)}>{label}</div>;
+                  })}
+                </div>
+                <div className="region-mix__total"><strong>{fmtInt(row.inScope)}</strong> accts</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="region-mix__legend">
+        <span><span className="swatch sw-maintain"></span> Maintain</span>
+        <span><span className="swatch sw-expansion"></span> Expansion Ready</span>
+        <span><span className="swatch sw-risk"></span> At Risk</span>
+        <span style={{ marginLeft: 'auto' }}>Splits in-scope accounts by Region &middot; honours Area / Sub Region / Segment / Quarter filters</span>
+      </div>
+    </div>
+  );
+}
+
+function AtRiskCard({ atRisk, openDrill }) {
+  const { top, scopeBits } = atRisk;
+  const scope = scopeBits.length ? '\u00b7 ' + scopeBits.join(' \u00b7 ') : '\u00b7 worldwide';
+  return (
+    <div className="card">
+      <h2>Top {top.length || 0} At-Risk accounts <span style={{ fontWeight: 400, color: 'var(--cp-text-muted)', fontSize: '13px' }}>{scope}</span></h2>
+      <p className="hint">Sorted by eligible Copilot seats &middot; honours all filters &middot; recommended action computed live from atoms</p>
+      <table>
+        <thead>
+          <tr>
+            <th>TPID &middot; Account</th><th>Classification</th><th>Bucket</th>
+            <th className="num">Eligible seats</th><th className="num">Copilot seats</th><th className="num">Expiring in T-12</th><th>Suggested play</th>
+          </tr>
+        </thead>
+        <tbody>
+          {top.length === 0
+            ? (<tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--cp-text-muted)', padding: '20px' }}>No At-Risk accounts in this slice.</td></tr>)
+            : top.map(({ row, sub }) => {
+              const play = SUB_PLAY[sub] || '\u2014';
+              const playText = row.expiringT12 > 50000 ? play + ' \u00b7 urgent' : play;
+              return (
+                <tr className="atrisk-row" key={row.tpid} data-drill={'account:' + row.tpid} title="Click for full account detail" onClick={() => openDrill('account:' + row.tpid)}>
+                  <td><strong>{row.tpid}</strong> &middot; {row.name}</td>
+                  <td>{SUB_LABEL[sub] || sub}</td>
+                  <td><span className="pill pill-risk">At Risk</span></td>
+                  <td className="num">{fmtInt(row.eligibleSeats)}</td>
+                  <td className="num">{fmtInt(row.paidSeats)}</td>
+                  <td className="num">{fmtInt(row.expiringT12)}</td>
+                  <td>{playText}</td>
+                </tr>
+              );
+            })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function Leaf({ cls, drill, code, strong, sub, openDrill }) {
+  return (
+    <a className={'dtree-leaf ' + cls} data-drill={drill} title={`Drill into ${strong} accounts`} onClick={() => openDrill(drill)}>
+      <span className="dtree-leaf__code">{code}</span>
+      <span className="dtree-leaf__txt"><strong>{strong}</strong> &mdash; <span className="dtree-leaf__sub">{sub}</span></span>
+    </a>
+  );
+}
+
+function DecisionTreeCard({ openDrill }) {
+  return (
+    <div className="card">
+      <h2>Classification decision tree</h2>
+      <p className="hint">The exact branch logic the dashboard runs per account &middot; thresholds are live from the model &middot; click any outcome to drill into its accounts</p>
+      <div className="dtree-entry">
+        <span className="dtree-entry__tag">Entry filter</span>
+        <span>Min Account TAM <strong>&ge; {THR_LABELS.minseats} eligible Copilot seats</strong> &middot; contract <strong>expiring within T-12 months</strong> <span style={{ color: 'var(--cp-text-muted)' }}>(deck also admits &ldquo;3 months since last expansion&rdquo;)</span> &mdash; accounts that fail are out of scope.</span>
+      </div>
+      <div className="dtree">
+        <div className="dtree-node">Workload depth &mdash; <code>PRU/PAU</code> &ge; {THR_LABELS.depth}?</div>
+        <div className="dtree-kids">
+          <div className="dtree-branch">
+            <span className="dtree-edge dtree-edge--yes">Yes &mdash; deep</span>
+            <div className="dtree-node">Penetration &mdash; <code>PAU/IW elig.</code> &gt; {THR_LABELS.pen}?</div>
+            <div className="dtree-kids">
+              <div className="dtree-branch">
+                <span className="dtree-edge dtree-edge--yes">Yes</span>
+                <Leaf cls="dtree-leaf--maintain" drill="bucket:maintain" code="M" strong="Maintain" sub="healthy, monitor · CSU stewardship" openDrill={openDrill} />
+              </div>
+              <div className="dtree-branch">
+                <span className="dtree-edge dtree-edge--no">No &mdash; Expansion Ready</span>
+                <div className="dtree-node">Subgroup &mdash; Pipe (Y/N) &times; Unpaid chat (Y/N)</div>
+                <div className="dtree-kids">
+                  <div className="dtree-branch"><Leaf cls="dtree-leaf--expansion" drill="sub:pipe_chat" code="P+C" strong="Pipe + Chat" sub="land pipeline + convert chat · AE + STU" openDrill={openDrill} /></div>
+                  <div className="dtree-branch"><Leaf cls="dtree-leaf--expansion" drill="sub:pipe" code="P" strong="Pipe only" sub="pipeline within T-6 · AE to land" openDrill={openDrill} /></div>
+                  <div className="dtree-branch"><Leaf cls="dtree-leaf--expansion" drill="sub:chat" code="C" strong="Chat only" sub="whitespace, AE open · NPSA motion" openDrill={openDrill} /></div>
+                  <div className="dtree-branch"><Leaf cls="dtree-leaf--expansion" drill="sub:neither" code="–" strong="No signal yet" sub="depth-only · proactive outreach" openDrill={openDrill} /></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="dtree-branch">
+            <span className="dtree-edge dtree-edge--no">No &mdash; At Risk</span>
+            <div className="dtree-node">Engagement &mdash; <code>MAU/PAU</code> &ge; {THR_LABELS.eng}?</div>
+            <div className="dtree-kids">
+              <div className="dtree-branch">
+                <span className="dtree-edge dtree-edge--yes">Yes &mdash; frequent</span>
+                <div className="dtree-node">Depth &mdash; <code>PRU/PAU</code> &lt; {THR_LABELS.shallow}?</div>
+                <div className="dtree-kids">
+                  <div className="dtree-branch">
+                    <span className="dtree-edge dtree-edge--yes">Yes</span>
+                    <Leaf cls="dtree-leaf--action" drill="sub:bestpractice" code="A1" strong="Best-practice expansion" sub="new use cases · CSU" openDrill={openDrill} />
+                  </div>
+                  <div className="dtree-branch">
+                    <span className="dtree-edge dtree-edge--no">No &mdash; PRU/PAU 20&ndash;45%</span>
+                    <Leaf cls="dtree-leaf--action" drill="sub:stickiness" code="A2" strong="Drive stickiness" sub="meaningful workflows · CSU" openDrill={openDrill} />
+                  </div>
+                </div>
+              </div>
+              <div className="dtree-branch">
+                <span className="dtree-edge dtree-edge--no">No &mdash; disengaged</span>
+                <Leaf cls="dtree-leaf--risk" drill="sub:reengage" code="A3" strong="Re-engage" sub="disengaged · champion play · CSU → ATU" openDrill={openDrill} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="dtree-foot">
+        <span><span className="swatch sw-maintain"></span> Maintain</span>
+        <span><span className="swatch sw-expansion"></span> Expansion Ready</span>
+        <span><span className="swatch sw-risk"></span> At Risk</span>
+        <span style={{ marginLeft: 'auto' }}>Source: Copilot Customer Classification framework &middot; interactive demo with synthetic data</span>
+      </div>
+    </div>
+  );
+}
+
+function MovementCard({ movement }) {
+  const { curQ, prevQ, order, mat, improved, slipped, stable, fresh, maxCell, trend, maxT } = movement;
+  const scope = prevQ ? `\u00b7 ${prevQ} \u2192 ${curQ}` : `\u00b7 ${curQ} (no prior quarter)`;
+  const cell = (p, c) => {
+    const v = mat[p][c], diag = p === c, dir = BUCKET_RANK[c] - BUCKET_RANK[p];
+    const tone = diag ? 'mv-diag' : dir > 0 ? 'mv-up' : 'mv-down';
+    const intensity = (v / maxCell).toFixed(2);
+    return <div key={p + '-' + c} className={'mv-cell ' + tone} style={{ '--i': intensity }} title={`${BUCKET_LABEL[p]} \u2192 ${BUCKET_LABEL[c]}: ${fmtInt(v)}`}>{v ? fmtInt(v) : '\u00b7'}</div>;
+  };
+  return (
+    <div className="card">
+      <h2>Bucket movement <span style={{ fontWeight: 400, color: 'var(--cp-text-muted)', fontSize: '13px' }}>{scope}</span></h2>
+      <p className="hint">Quarter-over-quarter transitions between buckets &middot; honours Region / Area / Sub Region / Segment filters &middot; quarter follows the selector</p>
+      <div className="movement-grid-wrap">
+        <div className="move-kpis">
+          <div className="move-kpi move-kpi--up"><div className="move-kpi__val">{fmtInt(improved)}</div><div className="move-kpi__lbl">&uarr; Improved</div></div>
+          <div className="move-kpi move-kpi--down"><div className="move-kpi__val">{fmtInt(slipped)}</div><div className="move-kpi__lbl">&darr; Slipped</div></div>
+          <div className="move-kpi move-kpi--flat"><div className="move-kpi__val">{fmtInt(stable)}</div><div className="move-kpi__lbl">&rarr; Stable</div></div>
+          <div className="move-kpi move-kpi--new"><div className="move-kpi__val">{fmtInt(fresh)}</div><div className="move-kpi__lbl">New in scope</div></div>
+        </div>
+        <div className="movement-cols">
+          <div className="movement-grid">
+            <div className="mv-corner">{(prevQ || '\u2014') + ' \u2192 ' + curQ}</div>
+            {order.map((c) => <div key={'ch-' + c} className={'mv-colhead mv-head-' + c}>to {BUCKET_LABEL[c]}</div>)}
+            {order.map((p) => (
+              <React.Fragment key={'r-' + p}>
+                <div className={'mv-rowhead mv-head-' + p}>from {BUCKET_LABEL[p]}</div>
+                {order.map((c) => cell(p, c))}
+              </React.Fragment>
+            ))}
+          </div>
+          <div className="movement-trend-wrap">
+            <div className="movement-trend">
+              {trend.map((t) => {
+                const seg = (key) => {
+                  const h = t.total > 0 ? (t[key] / maxT * 100) : 0;
+                  return <div key={key} className={'tr-seg tr-' + key} style={{ height: h.toFixed(1) + '%' }} title={`${BUCKET_LABEL[key]} ${t.q}: ${fmtInt(t[key])}`}></div>;
+                };
+                const isCur = t.q === curQ;
+                return (
+                  <div key={t.q} className={'tr-col' + (isCur ? ' tr-col--cur' : '')}>
+                    <div className="tr-stack">{seg('risk')}{seg('expansion')}{seg('maintain')}</div>
+                    <div className="tr-label">{t.q}</div>
+                    <div className="tr-total">{fmtInt(t.total)}</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="movement-trend-cap">In-scope accounts by bucket, per quarter</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Footer() {
+  return (
+    <footer>
+      <div>Synthetic sample data &middot; classification and filtering computed live in the browser &middot; per-quarter grain</div>
+      <div>Append <code>?clawpilotTheme=dark</code> or <code>?clawpilotTheme=light</code> to override theme</div>
+    </footer>
+  );
+}
+
+function DrillModal({ drill, search, setSearch, sort, setSort, sub, setSub, onClose }) {
+  const searchRef = useRef(null);
+  useEffect(() => {
+    if (!drill) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key === '/') {
+        const t = e.target;
+        const inField = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+        if (!inField) { e.preventDefault(); if (searchRef.current) { searchRef.current.focus(); searchRef.current.select(); } }
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [drill, onClose]);
+
+  const filterSortRows = () => {
+    let rows = drill.rows;
+    if (sub) rows = rows.filter((r) => r._sub === sub);
+    const q = search.trim().toLowerCase();
+    if (q) rows = rows.filter((r) => r.name.toLowerCase().includes(q) || String(r.tpid).includes(q));
+    const { col, dir } = sort;
+    return rows.slice().sort((a, b) => {
+      const va = a[col], vb = b[col];
+      if (typeof va === 'number') return (va - vb) * dir;
+      return String(va).localeCompare(String(vb)) * dir;
+    });
+  };
+
+  const view = useMemo(() => {
+    if (!drill) return { shown: [], meta: '' };
+    const rows = filterSortRows();
+    const cap = 500;
+    const meta = rows.length > cap ? `Showing top ${cap} of ${fmtInt(rows.length)} accounts` : `${fmtInt(rows.length)} accounts`;
+    return { shown: rows.slice(0, cap), meta };
+  }, [drill, sub, search, sort]);
+
+  const chips = useMemo(() => {
+    if (!drill || !drill.bucketForChips) return null;
+    const subs = SUBGROUPS[drill.bucketForChips] || [];
+    if (subs.length <= 1) return null;
+    const counts = {};
+    drill.rows.forEach((r) => { counts[r._sub] = (counts[r._sub] || 0) + 1; });
+    return { subs, counts, total: drill.rows.length, bucket: drill.bucketForChips };
+  }, [drill]);
+
+  const sortBy = (col) => setSort((s) => s.col === col ? { col, dir: -s.dir } : { col, dir: -1 });
+
+  const exportCsv = () => {
+    if (!drill) return;
+    const rows = filterSortRows();
+    const headers = ['TPID', 'Account', 'Region', 'Area', 'SubRegion', 'Segment', 'Quarter', 'Subgroup', 'Bucket', 'EligibleSeats', 'CopilotSeats', 'Depth_PRU_PAU_pct', 'Penetration_PAU_Elig_pct', 'Use_MAU_PAU_pct', 'Pipeline_USD_Millions', 'UnpaidChat', 'ExpiringT12'];
+    const csvEscape = (v) => { if (v === null || v === undefined) return ''; const s = String(v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const lines = [headers.join(',')];
+    for (const r of rows) {
+      const depth = r.pau ? (r.pru / r.pau) * 100 : 0, pen = r.eligibleSeats ? (r.pau / r.eligibleSeats) * 100 : 0, useFreq = r.pau ? (r.mau / r.pau) * 100 : 0;
+      lines.push([r.tpid, r.name, r.region || '', r.area || '', r.subRegion || '', r.segment || '', r.quarter || '', r._subLabel || '', r._bucket || '', r.eligibleSeats || 0, r.paidSeats || 0, depth.toFixed(2), pen.toFixed(2), useFreq.toFixed(2), (r.pipeM || 0).toFixed(3), r.unpaidChat || 0, r.expiringT12 || 0].map(csvEscape).join(','));
+    }
+    const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const stamp = new Date().toISOString().slice(0, 10);
+    const slug = (drill.label || 'drill').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'drill';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `exec-portfolio_${slug}_${stamp}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+
+  const Th = ({ col, right, children }) => (
+    <th data-sort={col} style={right ? { textAlign: 'right' } : undefined} onClick={() => sortBy(col)}>{children}</th>
+  );
+
+  return (
+    <div className={'drill-modal' + (drill ? ' is-open' : '')} role="dialog" aria-modal="true" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="drill-modal__panel">
+        <div className="drill-modal__head">
+          <div className="drill-modal__title">{drill ? drill.label + drill.scope : 'Drilldown'}</div>
+          <button className="drill-modal__close" aria-label="Close" onClick={onClose}>&times;</button>
+        </div>
+        <div className="drill-modal__toolbar">
+          <input ref={searchRef} type="search" className="drill-modal__search" placeholder="Filter by TPID or name… ( / to focus )" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <span className="drill-modal__meta">{view.meta}</span>
+          <span style={{ flex: 1 }}></span>
+          <button type="button" className="drill-modal__btn" title="Download visible rows as CSV" onClick={exportCsv}>Export CSV</button>
+          <span>Click column headers to sort</span>
+        </div>
+        {chips && (
+          <div className="drill-chips">
+            <button type="button" className={'drill-chip' + (!sub ? ' is-active' : '')} onClick={() => setSub(null)}>All <span>{fmtInt(chips.total)}</span></button>
+            {chips.subs.map((s) => (
+              <button key={s.key} type="button" className={'drill-chip drill-chip--' + chips.bucket + (sub === s.key ? ' is-active' : '')} title={s.hint} onClick={() => setSub(s.key)}>{s.label} <span>{fmtInt(chips.counts[s.key] || 0)}</span></button>
+            ))}
+          </div>
+        )}
+        <div className="drill-modal__body">
+          <table className="drill-table">
+            <thead>
+              <tr>
+                <Th col="name">Account</Th>
+                <Th col="region">Region</Th>
+                <Th col="area">Area</Th>
+                <Th col="subRegion">Sub Region</Th>
+                <Th col="segment">Segment</Th>
+                <Th col="quarter">Quarter</Th>
+                <Th col="_subLabel">Subgroup</Th>
+                <Th col="eligibleSeats" right>Eligible seats</Th>
+                <Th col="paidSeats" right>Copilot seats</Th>
+                <th style={{ textAlign: 'right' }}>Depth (PRU/PAU)</th>
+                <th style={{ textAlign: 'right' }}>Pen (PAU/Elig)</th>
+                <th style={{ textAlign: 'right' }}>Use (MAU/PAU)</th>
+                <Th col="pipeM" right>Pipe $M</Th>
+                <Th col="unpaidChat" right>Unpaid chat</Th>
+                <Th col="expiringT12" right>Expiring T12</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {view.shown.length === 0
+                ? (<tr><td colSpan="15" style={{ textAlign: 'center', color: 'var(--cp-text-muted)', padding: '24px' }}>No accounts match.</td></tr>)
+                : view.shown.map((r, idx) => {
+                  const depth = r.pau ? (r.pru / r.pau) * 100 : 0, pen = r.eligibleSeats ? (r.pau / r.eligibleSeats) * 100 : 0, useFreq = r.pau ? (r.mau / r.pau) * 100 : 0;
+                  return (
+                    <tr key={r.tpid + '-' + r.quarter + '-' + idx}>
+                      <td><strong>{r.tpid}</strong> &middot; {r.name}</td>
+                      <td>{r.region || '\u2014'}</td><td>{r.area || '\u2014'}</td><td>{r.subRegion || '\u2014'}</td>
+                      <td>{r.segment || '\u2014'}</td><td>{r.quarter || '\u2014'}</td>
+                      <td><span className={'drill-pill drill-pill--' + r._bucket}>{r._subLabel}</span></td>
+                      <td className="num">{fmtInt(r.eligibleSeats)}</td>
+                      <td className="num">{fmtInt(r.paidSeats || 0)}</td>
+                      <td className="num">{depth.toFixed(1)}%</td>
+                      <td className="num">{pen.toFixed(1)}%</td>
+                      <td className="num">{useFreq.toFixed(1)}%</td>
+                      <td className="num">{fmtMoney(r.pipeM)}</td>
+                      <td className="num">{fmtInt(r.unpaidChat)}</td>
+                      <td className="num">{fmtInt(r.expiringT12)}</td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================ APP ============================ */
+function App() {
+  const [filter, setFilter] = useState(initialFilter);
+  const [drill, setDrill] = useState(null);
+  const [drillSearch, setDrillSearch] = useState('');
+  const [drillSort, setDrillSort] = useState({ col: 'eligibleSeats', dir: -1 });
+  const [drillSub, setDrillSub] = useState(null);
+
+  useEffect(() => { writeUrl(filter); }, [filter]);
+
+  const d = useMemo(() => aggregate(filter), [filter]);
+  const regionRows = useMemo(() => TAXONOMY.regions.map((name) => Object.assign({ name }, aggregate(Object.assign({}, filter, { region: name })))), [filter]);
+  const movement = useMemo(() => computeMovement(filter), [filter]);
+  const atRisk = useMemo(() => computeAtRisk(filter), [filter]);
+  const areaOptions = useMemo(() => filter.region === 'All' ? [] : (TAXONOMY.areasByRegion[filter.region] || []), [filter.region]);
+  const subOptions = useMemo(() => (filter.region === 'All' || filter.area === 'All') ? [] : (TAXONOMY.subsByRegionArea[filter.region + '|' + filter.area] || []), [filter.region, filter.area]);
+
+  const openDrill = useCallback((descriptor, regionOverride) => {
+    const built = buildDrill(descriptor, regionOverride, filter);
+    setDrill(built);
+    setDrillSearch(built.searchSeed);
+    setDrillSort({ col: 'eligibleSeats', dir: -1 });
+    setDrillSub(null);
+  }, [filter]);
+  const closeDrill = useCallback(() => setDrill(null), []);
+
+  const defQ = TAXONOMY.quarters[TAXONOMY.quarters.length - 1] || 'All';
+  const onQuarter = (v) => setFilter((f) => ({ ...f, quarter: v }));
+  const onRegion = (v) => setFilter((f) => ({ ...f, region: v, area: 'All', subregion: 'All' }));
+  const onArea = (v) => setFilter((f) => ({ ...f, area: v, subregion: 'All' }));
+  const onSub = (v) => setFilter((f) => ({ ...f, subregion: v }));
+  const onSegment = (v) => setFilter((f) => ({ ...f, segment: v }));
+  const onPickRegion = (name) => setFilter((f) => ({ ...f, region: f.region === name ? 'All' : name, area: 'All', subregion: 'All' }));
+  const onReset = () => setFilter({ quarter: defQ, region: 'All', area: 'All', subregion: 'All', segment: 'All' });
+
+  const resetDisabled = !Object.keys(URL_KEYS).some((k) => filter[k] && filter[k] !== 'All');
+
+  return (
+    <React.Fragment>
+      <Banner filter={filter} areaOptions={areaOptions} subOptions={subOptions}
+        onQuarter={onQuarter} onRegion={onRegion} onArea={onArea} onSub={onSub} onSegment={onSegment}
+        onReset={onReset} resetDisabled={resetDisabled} />
+      <div className="page">
+        <Header scope={scopeLabel(filter)} />
+        <Legend />
+        <KpiStrip d={d} openDrill={openDrill} />
+        <div className="row donut-and-matrix">
+          <DonutCard d={d} openDrill={openDrill} />
+          <SubgroupCard d={d} openDrill={openDrill} />
+        </div>
+        <RegionCard regionRows={regionRows} segment={filter.segment} region={filter.region} onPickRegion={onPickRegion} openDrill={openDrill} />
+        <AtRiskCard atRisk={atRisk} openDrill={openDrill} />
+        <DecisionTreeCard openDrill={openDrill} />
+        <MovementCard movement={movement} />
+        <Footer />
+      </div>
+      <DrillModal drill={drill} search={drillSearch} setSearch={setDrillSearch} sort={drillSort} setSort={setDrillSort} sub={drillSub} setSub={setDrillSub} onClose={closeDrill} />
+    </React.Fragment>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+
+  </script>
+</body>
+</html>

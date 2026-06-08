@@ -1,0 +1,2003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Copilot Customer Classification — Exec Portfolio</title>
+  <script>
+    (() => {
+      const param = new URLSearchParams(window.location.search).get("clawpilotTheme");
+      const theme =
+        param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --cp-bg: #f7f4ef;
+      --cp-bg-elevated: #fcfbf8;
+      --cp-surface: #ffffff;
+      --cp-surface-soft: #f5f5f5;
+      --cp-border: #dedede;
+      --cp-border-strong: #919191;
+      --cp-text: #242424;
+      --cp-text-muted: #5c5c5c;
+      --cp-text-soft: #6f6f6f;
+      --cp-accent: #b11f4b;
+      --cp-accent-hover: #9a1a41;
+      --cp-accent-soft: rgba(177, 31, 75, 0.08);
+      --cp-accent-fg: #ffffff;
+      --cp-success: #16a34a;
+      --cp-danger: #dc2626;
+      --cp-warning: #f59e0b;
+      --cp-link: #0078d4;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+      --cp-overlay: rgba(255, 255, 255, 0.8);
+      --cp-panel: rgba(255, 255, 255, 0.86);
+      --cp-panel-strong: rgba(255, 255, 255, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.55);
+      --cp-highlight: rgba(177, 31, 75, 0.12);
+
+      /* Decision-tree bucket colors (from [Classification Color] measure) */
+      --bucket-maintain: #1F7A1F;
+      --bucket-expansion: #E8741C;
+      --bucket-action: #E08A1A;
+      --bucket-risk: #C8102E;
+
+      /* Clickable globe region picker */
+      --globe-ocean1: #eef4fb;
+      --globe-ocean2: #cfe0f1;
+      --globe-grat: #93b0cc;
+      --globe-land: #9ab497;
+      --globe-land-edge: #7c9a79;
+      --globe-land-hover: #b6cfb2;
+      --globe-land-dim: #c8d2c6;
+    }
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --cp-bg: #3d3b3a;
+      --cp-bg-elevated: #343231;
+      --cp-surface: #292929;
+      --cp-surface-soft: #2e2e2e;
+      --cp-border: #474747;
+      --cp-border-strong: #5f5f5f;
+      --cp-text: #dedede;
+      --cp-text-muted: #919191;
+      --cp-text-soft: #b0b0b0;
+      --cp-accent: #fd8ea1;
+      --cp-accent-hover: #fb7b91;
+      --cp-accent-soft: rgba(253, 142, 161, 0.14);
+      --cp-accent-fg: #1a1a1a;
+      --cp-success: #4ade80;
+      --cp-danger: #f87171;
+      --cp-warning: #fbbf24;
+      --cp-link: #4da6ff;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+      --cp-overlay: rgba(41, 41, 41, 0.88);
+      --cp-panel: rgba(41, 41, 41, 0.72);
+      --cp-panel-strong: rgba(41, 41, 41, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.04);
+      --cp-highlight: rgba(253, 142, 161, 0.12);
+
+      --bucket-maintain: #4ade80;
+      --bucket-expansion: #FB9A3C;
+      --bucket-action: #fbbf24;
+      --bucket-risk: #f87171;
+
+      --globe-ocean1: #2c3c50;
+      --globe-ocean2: #1b2532;
+      --globe-grat: #44607e;
+      --globe-land: #4f6d56;
+      --globe-land-edge: #3d5743;
+      --globe-land-hover: #628468;
+      --globe-land-dim: #38473d;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--cp-bg);
+      color: var(--cp-text);
+      font-size: 14px;
+      line-height: 1.45;
+      min-height: 100vh;
+    }
+    .page {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 24px 28px 48px;
+    }
+
+    /* Power BI–style report banner */
+    .pbi-banner {
+      background: #1f3864;
+      color: #ffffff;
+      padding: 10px 28px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      border-bottom: 2px solid #16264a;
+    }
+    .pbi-banner__title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      margin-right: 12px;
+      white-space: nowrap;
+    }
+    .pbi-banner__filters {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+    .pbi-filter {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #dbe4f5;
+    }
+    .pbi-filter label {
+      font-weight: 600;
+      color: #ffffff;
+    }
+    .pbi-filter select {
+      appearance: none;
+      -webkit-appearance: none;
+      background: #ffffff
+        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%231f3864' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>")
+        no-repeat right 8px center / 10px 7px;
+      color: #1f3864;
+      border: 1px solid #ffffff;
+      border-radius: 2px;
+      padding: 4px 26px 4px 10px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      min-width: 110px;
+      cursor: pointer;
+    }
+    .pbi-filter select:focus {
+      outline: 2px solid #ffffff;
+      outline-offset: 1px;
+    }
+    html[data-theme="dark"] .pbi-banner {
+      background: #16264a;
+      border-bottom-color: #0c1730;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--cp-border);
+      margin-bottom: 20px;
+    }
+    .title-block h1 {
+      margin: 0 0 4px 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--cp-text);
+    }
+    .title-block .subtitle {
+      margin: 0;
+      font-size: 12px;
+      color: var(--cp-text-muted);
+    }
+    .meta-block {
+      text-align: right;
+      font-size: 12px;
+      color: var(--cp-text-muted);
+    }
+    .meta-block strong { color: var(--cp-text); font-weight: 500; }
+
+    /* Legend strip */
+    .legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 10px 14px;
+      background: var(--cp-bg-elevated);
+      border: 1px solid var(--cp-border);
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-size: 12px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .swatch {
+      width: 12px; height: 12px; border-radius: 3px;
+      display: inline-block;
+    }
+    .sw-maintain  { background: var(--bucket-maintain); }
+    .sw-expansion { background: var(--bucket-expansion); }
+    .sw-action    { background: var(--bucket-action); }
+    .sw-risk      { background: var(--bucket-risk); }
+
+    /* KPI strip */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .kpi {
+      background: var(--cp-surface);
+      border: 1px solid var(--cp-border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      box-shadow: 0 0 2px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .kpi .label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--cp-text-muted);
+      margin-bottom: 6px;
+    }
+    .kpi .value {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--cp-text);
+      letter-spacing: -0.3px;
+    }
+    .kpi .sub {
+      font-size: 11px;
+      color: var(--cp-text-soft);
+      margin-top: 4px;
+    }
+    .kpi.accent .value { color: var(--cp-accent); }
+    .kpi.warn .value   { color: var(--bucket-action); }
+    .kpi.risk .value   { color: var(--bucket-risk); }
+
+    /* Section row layouts */
+    .row { display: grid; gap: 18px; margin-bottom: 18px; }
+    .row.two   { grid-template-columns: 1fr 1fr; }
+    .row.three { grid-template-columns: 1.2fr 1fr 1fr; }
+    .row.donut-and-matrix { grid-template-columns: 360px 1fr; }
+
+    /* Card */
+    .card {
+      background: var(--cp-surface);
+      border: 1px solid var(--cp-border);
+      border-radius: 16px;
+      padding: 18px 20px;
+      box-shadow: 0 0 2px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .card h2 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--cp-text);
+      margin: 0 0 4px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .card .hint {
+      font-size: 11px;
+      color: var(--cp-text-muted);
+      margin: 0 0 14px 0;
+    }
+
+    /* Donut */
+    .donut-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+    svg.donut { width: 240px; height: 240px; }
+    .donut-center {
+      position: relative;
+    }
+    .donut-center-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .donut-center-text .big {
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--cp-text);
+      line-height: 1;
+    }
+    .donut-center-text .small {
+      font-size: 11px;
+      color: var(--cp-text-muted);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .donut-legend {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      width: 100%;
+    }
+    .donut-legend .row-item {
+      display: grid;
+      grid-template-columns: 14px 1fr auto auto;
+      gap: 10px;
+      align-items: center;
+      font-size: 12px;
+      padding: 6px 8px;
+      border-radius: 6px;
+    }
+    .donut-legend .row-item:hover { background: var(--cp-surface-soft); }
+    .donut-legend .name { color: var(--cp-text); }
+    .donut-legend .pct { color: var(--cp-text-muted); width: 48px; text-align: right; }
+    .donut-legend .count { color: var(--cp-text); font-variant-numeric: tabular-nums; width: 60px; text-align: right; font-weight: 500; }
+
+    /* Classification distribution bar */
+    .leaf-list {
+      display: grid;
+      gap: 10px;
+    }
+    .leaf {
+      display: grid;
+      grid-template-columns: 1fr 80px;
+      gap: 10px;
+      align-items: center;
+    }
+    .leaf .meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+    }
+    .leaf .bar-track {
+      grid-column: 1 / -1;
+      height: 6px;
+      background: var(--cp-surface-soft);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .leaf .bar-fill {
+      height: 100%;
+      border-radius: 3px;
+    }
+    .leaf .count {
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+      text-align: right;
+      font-size: 13px;
+    }
+    .leaf .count-sub {
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      font-size: 11px;
+      color: var(--cp-text-muted);
+      margin-top: 2px;
+    }
+    .leaf .leaf-label {
+      color: var(--cp-text);
+      font-weight: 500;
+    }
+
+    /* Classification decision tree */
+    .dtree-entry {
+      display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px;
+      background: var(--cp-accent-soft);
+      border: 1px solid var(--cp-border);
+      border-left: 3px solid var(--cp-accent);
+      border-radius: 8px; padding: 10px 14px; margin-bottom: 18px;
+      font-size: 12.5px; color: var(--cp-text); line-height: 1.5;
+    }
+    .dtree-entry__tag {
+      font-size: 10px; text-transform: uppercase; letter-spacing: .6px; font-weight: 700;
+      color: var(--cp-accent); border: 1px solid var(--cp-accent);
+      border-radius: 999px; padding: 2px 8px; white-space: nowrap;
+    }
+    .dtree { font-size: 13px; overflow-x: auto; padding-bottom: 4px; }
+    .dtree-kids { margin-left: 18px; padding-left: 18px; border-left: 1.5px solid var(--cp-border); }
+    .dtree-branch { position: relative; padding: 6px 0; }
+    .dtree-branch::before {
+      content: ""; position: absolute; left: -18px; top: 24px;
+      width: 16px; height: 1.5px; background: var(--cp-border);
+    }
+    .dtree-node {
+      display: inline-block; background: var(--cp-surface-soft);
+      border: 1px solid var(--cp-border); border-radius: 8px;
+      padding: 7px 12px; font-weight: 600; color: var(--cp-text);
+    }
+    .dtree-node code {
+      font-weight: 700; color: var(--cp-accent);
+      background: var(--cp-accent-soft); padding: 0 4px; border-radius: 4px;
+    }
+    .dtree-edge {
+      display: inline-block; font-size: 10.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .4px;
+      padding: 1px 7px; border-radius: 999px; margin-right: 8px; vertical-align: middle;
+    }
+    .dtree-edge--yes { color: var(--cp-success); border: 1px solid var(--cp-success); }
+    .dtree-edge--no  { color: var(--cp-text-muted); border: 1px solid var(--cp-border-strong); }
+    .dtree-leaf {
+      display: inline-flex; align-items: center; gap: 10px;
+      text-decoration: none; cursor: pointer;
+      background: var(--cp-surface); border: 1px solid var(--cp-border);
+      border-left-width: 4px; border-radius: 8px; padding: 7px 12px;
+      color: var(--cp-text); transition: box-shadow .12s ease, transform .12s ease;
+    }
+    .dtree-leaf:hover { box-shadow: var(--cp-shadow); transform: translateY(-1px); }
+    .dtree-leaf__code {
+      font-weight: 700; font-variant-numeric: tabular-nums; font-size: 12px;
+      min-width: 28px; height: 24px; padding: 0 6px;
+      display: inline-flex; align-items: center; justify-content: center; border-radius: 6px;
+    }
+    .dtree-leaf__txt { font-size: 12.5px; }
+    .dtree-leaf__sub { color: var(--cp-text-muted); }
+    .dtree-leaf--maintain  { border-left-color: var(--bucket-maintain); }
+    .dtree-leaf--maintain  .dtree-leaf__code { background: var(--bucket-maintain); color: #ffffff; }
+    .dtree-leaf--expansion { border-left-color: var(--bucket-expansion); }
+    .dtree-leaf--expansion .dtree-leaf__code { background: var(--bucket-expansion); color: #3a1f00; }
+    .dtree-leaf--action    { border-left-color: var(--bucket-action); }
+    .dtree-leaf--action    .dtree-leaf__code { background: var(--bucket-action); color: #3a2300; }
+    .dtree-leaf--risk      { border-left-color: var(--bucket-risk); }
+    .dtree-leaf--risk      .dtree-leaf__code { background: var(--bucket-risk); color: #ffffff; }
+    html[data-theme="dark"] .dtree-leaf--maintain  .dtree-leaf__code,
+    html[data-theme="dark"] .dtree-leaf--expansion .dtree-leaf__code,
+    html[data-theme="dark"] .dtree-leaf--action    .dtree-leaf__code,
+    html[data-theme="dark"] .dtree-leaf--risk      .dtree-leaf__code { color: #10110f; }
+    .dtree-foot {
+      display: flex; gap: 16px; flex-wrap: wrap; align-items: center;
+      margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--cp-border);
+      font-size: 11.5px; color: var(--cp-text-muted);
+    }
+    .dtree-foot .swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; vertical-align: -1px; margin-right: 4px; }
+
+    /* Subgroup breakdown group heading */
+    .sub-group-head {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--cp-text-muted); margin: 14px 0 4px;
+    }
+    .sub-group-head:first-child { margin-top: 0; }
+    .sub-group-head .swatch { width: 11px; height: 11px; border-radius: 3px; }
+    .sub-group-total { margin-left: auto; color: var(--cp-text); font-variant-numeric: tabular-nums; }
+
+    /* Drill subgroup chips */
+    .drill-chips {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      padding: 10px 20px; border-bottom: 1px solid var(--cp-border);
+      background: var(--cp-bg-elevated);
+    }
+    .drill-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px;
+      border: 1px solid var(--cp-border); background: var(--cp-surface);
+      color: var(--cp-text); font: inherit; font-size: 12px; cursor: pointer;
+    }
+    .drill-chip span { font-variant-numeric: tabular-nums; color: var(--cp-text-muted); font-weight: 600; }
+    .drill-chip:hover { border-color: var(--cp-border-strong); }
+    .drill-chip.is-active { background: var(--cp-accent); border-color: var(--cp-accent); color: var(--cp-accent-fg); }
+    .drill-chip.is-active span { color: var(--cp-accent-fg); }
+
+    /* Bucket movement (QoQ) */
+    .movement-grid-wrap { display: grid; gap: 16px; }
+    .move-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .move-kpi {
+      border: 1px solid var(--cp-border); border-radius: 10px; padding: 10px 14px;
+      background: var(--cp-surface); border-left-width: 3px;
+    }
+    .move-kpi__val { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; font-variant-numeric: tabular-nums; }
+    .move-kpi__lbl { font-size: 11px; color: var(--cp-text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .move-kpi--up   { border-left-color: var(--bucket-maintain); }
+    .move-kpi--up   .move-kpi__val { color: var(--bucket-maintain); }
+    .move-kpi--down { border-left-color: var(--bucket-risk); }
+    .move-kpi--down .move-kpi__val { color: var(--bucket-risk); }
+    .move-kpi--flat { border-left-color: var(--cp-border-strong); }
+    .move-kpi--new  { border-left-color: var(--cp-link); }
+    .move-kpi--new  .move-kpi__val { color: var(--cp-link); }
+    .movement-cols { display: grid; grid-template-columns: 1fr 220px; gap: 18px; align-items: start; }
+    @media (max-width: 920px) { .movement-cols { grid-template-columns: 1fr; } .move-kpis { grid-template-columns: repeat(2,1fr); } }
+    .movement-grid {
+      display: grid; grid-template-columns: 130px repeat(3, 1fr); gap: 6px;
+    }
+    .mv-corner { font-size: 10.5px; color: var(--cp-text-soft); display: flex; align-items: flex-end; padding: 4px; }
+    .mv-colhead, .mv-rowhead {
+      font-size: 11px; font-weight: 600; color: var(--cp-text-muted);
+      padding: 6px 8px; border-bottom: 2px solid transparent;
+    }
+    .mv-rowhead { display: flex; align-items: center; border-bottom: none; border-left: 3px solid transparent; }
+    .mv-head-maintain  { border-color: var(--bucket-maintain); }
+    .mv-head-expansion { border-color: var(--bucket-expansion); }
+    .mv-head-risk      { border-color: var(--bucket-risk); }
+    .mv-cell {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 46px; border-radius: 8px; font-weight: 600; font-variant-numeric: tabular-nums;
+      border: 1px solid var(--cp-border); color: var(--cp-text);
+    }
+    .mv-diag { background: color-mix(in srgb, var(--cp-text-muted) calc(var(--i) * 22%), var(--cp-surface)); }
+    .mv-up   { background: color-mix(in srgb, var(--bucket-maintain) calc(var(--i) * 55%), var(--cp-surface)); }
+    .mv-down { background: color-mix(in srgb, var(--bucket-risk) calc(var(--i) * 55%), var(--cp-surface)); }
+    .movement-trend-wrap { border-left: 1px solid var(--cp-border); padding-left: 18px; }
+    .movement-trend { display: flex; gap: 10px; align-items: flex-end; height: 150px; }
+    .tr-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; }
+    .tr-stack { flex: 1; width: 100%; display: flex; flex-direction: column; justify-content: flex-end; border-radius: 4px 4px 0 0; overflow: hidden; }
+    .tr-seg { width: 100%; }
+    .tr-maintain  { background: var(--bucket-maintain); }
+    .tr-expansion { background: var(--bucket-expansion); }
+    .tr-risk      { background: var(--bucket-risk); }
+    .tr-label { font-size: 11px; color: var(--cp-text-muted); }
+    .tr-total { font-size: 11px; font-weight: 600; color: var(--cp-text); font-variant-numeric: tabular-nums; }
+    .tr-col--cur .tr-label { color: var(--cp-accent); font-weight: 700; }
+    .movement-trend-cap { font-size: 10.5px; color: var(--cp-text-soft); margin-top: 8px; }
+
+    /* Region comparison stacked bar */
+    .region-mix {
+      display: grid;
+      gap: 14px;
+      margin-top: 4px;
+    }
+    .region-mix__row {
+      display: grid;
+      grid-template-columns: 80px 1fr 80px;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+    }
+    .region-mix__name {
+      color: var(--cp-text);
+      font-weight: 500;
+    }
+    .region-mix__total {
+      text-align: right;
+      color: var(--cp-text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .region-mix__total strong {
+      color: var(--cp-text);
+      font-weight: 600;
+    }
+    .region-mix__track {
+      display: flex;
+      height: 22px;
+      background: var(--cp-surface-soft);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+    .region-mix__seg {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      transition: width 0.2s ease;
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .region-mix__seg--expansion { background: var(--bucket-expansion); color: #3a1f00; }
+    .region-mix__seg--risk { background: var(--bucket-risk); }
+    .region-mix__seg--maintain { background: var(--bucket-maintain); }
+    .region-mix__seg--action { background: var(--bucket-action); }
+    html[data-theme="dark"] .region-mix__seg--expansion { color: #1a1000; }
+    .region-mix__legend {
+      display: flex;
+      gap: 16px;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--cp-text-muted);
+    }
+    .region-mix__legend .swatch { width: 10px; height: 10px; }
+
+    /* Clickable globe region picker */
+    .region-explorer {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      flex-wrap: wrap;
+    }
+    .region-explorer .region-mix { flex: 1 1 360px; margin-top: 0; }
+    .globe-pick {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      width: 200px;
+    }
+    .globe { width: 196px; height: 196px; display: block; }
+    .globe-sphere { fill: url(#globeOcean); stroke: var(--cp-border-strong); stroke-width: 0.75; }
+    .globe-grat { fill: none; stroke: var(--globe-grat); stroke-width: 0.6; opacity: 0.55; }
+    .globe-region { cursor: pointer; outline: none; }
+    .globe-region path {
+      fill: var(--globe-land);
+      stroke: var(--globe-land-edge);
+      stroke-width: 0.6;
+      transition: fill 0.15s ease, stroke 0.15s ease;
+    }
+    .globe-region:hover path { fill: var(--globe-land-hover); }
+    .globe-region:focus-visible path { stroke: var(--cp-accent); stroke-width: 1.4; }
+    .globe.has-active .globe-region path { fill: var(--globe-land-dim); }
+    .globe-region.is-active path,
+    .globe.has-active .globe-region.is-active path { fill: var(--cp-accent); stroke: var(--cp-accent-hover); stroke-width: 1; }
+    .globe-region.is-active:hover path { fill: var(--cp-accent-hover); }
+    .globe-pick__cap {
+      font-size: 11px;
+      color: var(--cp-text-muted);
+      text-align: center;
+      line-height: 1.35;
+    }
+    .globe-pick__cap strong { color: var(--cp-text); font-weight: 600; }
+
+    /* Top-N table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th, td {
+      padding: 9px 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--cp-border);
+    }
+    th {
+      font-weight: 600;
+      color: var(--cp-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      font-size: 10px;
+      background: var(--cp-surface-soft);
+    }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    tr:last-child td { border-bottom: none; }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 600;
+      color: white;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+    .pill-maintain  { background: var(--bucket-maintain); }
+    .pill-expansion { background: var(--bucket-expansion); color: #000; }
+    .pill-action    { background: var(--bucket-action); }
+    .pill-risk      { background: var(--bucket-risk); }
+
+    /* Footer */
+    footer {
+      margin-top: 28px;
+      padding-top: 16px;
+      border-top: 1px solid var(--cp-border);
+      font-size: 11px;
+      color: var(--cp-text-muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    code {
+      font-family: Consolas, "Courier New", Courier, monospace;
+      background: var(--cp-surface-soft);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+
+    /* Drilldown affordance */
+    [data-drill] {
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease;
+    }
+    [data-drill]:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(31, 56, 100, 0.15);
+    }
+    .region-mix__seg[data-bucket] { cursor: pointer; }
+    .region-mix__seg[data-bucket]:hover { filter: brightness(1.08); }
+
+    /* Drilldown modal */
+    .drill-modal {
+      position: fixed; inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      display: none;
+      align-items: flex-start; justify-content: center;
+      z-index: 1000;
+      padding: 40px 20px;
+      overflow-y: auto;
+    }
+    .drill-modal.is-open { display: flex; }
+    .drill-modal__panel {
+      background: var(--cp-surface);
+      width: min(1280px, 100%);
+      border-radius: 8px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      max-height: calc(100vh - 80px);
+    }
+    .drill-modal__head {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 20px;
+      background: var(--cp-banner, #1f3864);
+      color: #fff;
+    }
+    .drill-modal__title { font-size: 16px; font-weight: 600; flex: 1; }
+    .drill-modal__meta { font-size: 12px; opacity: 0.85; }
+    .drill-modal__close {
+      background: rgba(255,255,255,0.15); color: #fff; border: 0;
+      width: 28px; height: 28px; border-radius: 4px;
+      cursor: pointer; font-size: 16px; line-height: 1;
+    }
+    .drill-modal__close:hover { background: rgba(255,255,255,0.30); }
+    .drill-modal__toolbar {
+      display: flex; gap: 8px; align-items: center;
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--cp-border);
+      font-size: 12px; color: var(--cp-text-muted);
+    }
+    .drill-modal__search {
+      flex: 1; max-width: 320px;
+      padding: 6px 10px;
+      border: 1px solid var(--cp-border);
+      border-radius: 4px;
+      font-family: inherit; font-size: 12px;
+    }
+    .drill-modal__btn {
+      padding: 6px 12px;
+      border: 1px solid var(--cp-border);
+      border-radius: 4px;
+      background: var(--cp-surface);
+      color: var(--cp-text);
+      font: inherit; font-size: 12px; font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .drill-modal__btn:hover { background: var(--cp-surface-soft); border-color: var(--cp-border-strong); }
+    .drill-modal__btn:focus-visible { outline: 2px solid var(--cp-accent); outline-offset: 1px; }
+    .pbi-banner__reset {
+      padding: 4px 12px;
+      background: rgba(255,255,255,0.12);
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 2px;
+      font: inherit; font-size: 12px; font-weight: 500;
+      cursor: pointer;
+      margin-left: 4px;
+    }
+    .pbi-banner__reset:hover { background: rgba(255,255,255,0.22); border-color: #ffffff; }
+    .pbi-banner__reset:disabled { opacity: 0.45; cursor: default; }
+    .atrisk-row { cursor: pointer; }
+    .atrisk-row:hover td { background: var(--cp-surface-soft); }
+    .drill-modal__body { overflow: auto; }
+    .drill-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .drill-table th, .drill-table td { padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--cp-border); }
+    .drill-table th {
+      position: sticky; top: 0;
+      background: var(--cp-surface-soft);
+      font-weight: 600; cursor: pointer; user-select: none;
+      white-space: nowrap;
+    }
+    .drill-table th:hover { background: var(--cp-border); }
+    .drill-table td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .drill-table tr:hover td { background: var(--cp-surface-soft); }
+    .drill-pill {
+      display: inline-block; padding: 1px 6px; border-radius: 3px;
+      font-size: 10px; font-weight: 600; color: #fff;
+      letter-spacing: 0.02em;
+    }
+    .drill-pill--maintain  { background: var(--bucket-maintain); }
+    .drill-pill--expansion { background: var(--bucket-expansion); color: #3a1f00; }
+    .drill-pill--action    { background: var(--bucket-action); }
+    .drill-pill--risk      { background: var(--bucket-risk); }
+  </style>
+</head>
+<body>
+  <div class="pbi-banner">
+    <div class="pbi-banner__title">M365 Copilot &mdash; Usage</div>
+    <div class="pbi-banner__filters">
+      <div class="pbi-filter">
+        <label for="f-time">Quarter:</label>
+        <select id="f-time"></select>
+      </div>
+      <div class="pbi-filter">
+        <label for="f-region">Region:</label>
+        <select id="f-region"></select>
+      </div>
+      <div class="pbi-filter">
+        <label for="f-area">Area:</label>
+        <select id="f-area"></select>
+      </div>
+      <div class="pbi-filter">
+        <label for="f-subregion">Sub Region:</label>
+        <select id="f-subregion"></select>
+      </div>
+      <div class="pbi-filter">
+        <label for="f-segment">Segment:</label>
+        <select id="f-segment"></select>
+      </div>
+      <button type="button" id="f-reset" class="pbi-banner__reset" title="Clear all filters" disabled>Reset</button>
+    </div>
+  </div>
+  <div class="page">
+
+    <header>
+      <div class="title-block">
+        <h1>Copilot Customer Classification — Exec Portfolio</h1>
+        <p class="subtitle">Operationalises the Copilot customer-classification decision tree against a field usage model · interactive demo</p>
+      </div>
+      <div class="meta-block">
+        <div>Last refreshed <strong>29 May 2026</strong> · <span id="scope-label">all-up</span></div>
+        <div>Synthetic sample data · public demo</div>
+      </div>
+    </header>
+
+    <!-- Legend strip -->
+    <div class="legend">
+      <div class="legend-item"><span class="swatch sw-maintain"></span> Maintain</div>
+      <div class="legend-item"><span class="swatch sw-expansion"></span> Expansion Ready</div>
+      <div class="legend-item"><span class="swatch sw-risk"></span> At Risk</div>
+      <div class="legend-item" style="margin-left:auto; color: var(--cp-text-soft);">
+        Entry filter: Eligible Seats &ge; 50,000 &middot; T-12 expiry signal &gt; 0
+      </div>
+    </div>
+
+    <!-- KPI strip -->
+    <div class="kpi-strip">
+      <div class="kpi" data-drill="all" title="Click to view all in-scope accounts">
+        <div class="label">Accounts in scope</div>
+        <div class="value" id="kpi-inscope">2,369</div>
+        <div class="sub">passing entry filter</div>
+      </div>
+      <div class="kpi" data-drill="bucket:expansion" title="Click to view Expansion Ready accounts">
+        <div class="label">Expansion-ready</div>
+        <div class="value" id="kpi-expansion-pct" style="color: var(--bucket-expansion);">0.0%</div>
+        <div class="sub"><span id="kpi-expansion">0</span> accounts · Pipe / Chat plays</div>
+      </div>
+      <div class="kpi risk" data-drill="bucket:risk" title="Click to view At-Risk accounts">
+        <div class="label">At Risk</div>
+        <div class="value" id="kpi-risk-pct">0.0%</div>
+        <div class="sub"><span id="kpi-risk">0</span> accounts · recommended actions</div>
+      </div>
+      <div class="kpi accent">
+        <div class="label">Committed pipeline</div>
+        <div class="value" id="kpi-pipe">$136.1M</div>
+        <div class="sub">ACR committed in scope</div>
+      </div>
+      <div class="kpi warn">
+        <div class="label">Unpaid chat signal</div>
+        <div class="value" id="kpi-chat">11.64M</div>
+        <div class="sub">whitespace seats (Chat trigger)</div>
+      </div>
+    </div>
+
+    <!-- Donut + Leaf distribution -->
+    <div class="row donut-and-matrix">
+      <div class="card">
+        <h2>Classification mix</h2>
+        <p class="hint" id="donut-hint">By bucket · 2,369 in-scope accounts</p>
+        <div class="donut-wrap">
+          <div class="donut-center">
+            <svg class="donut" viewBox="0 0 42 42">
+              <circle cx="21" cy="21" r="15.915" fill="none" stroke="var(--cp-surface-soft)" stroke-width="6" />
+              <circle id="donut-maintain-arc" cx="21" cy="21" r="15.915" fill="none"
+                stroke="var(--bucket-maintain)" stroke-width="6"
+                stroke-dasharray="0 100" stroke-dashoffset="25" />
+              <circle id="donut-expansion-arc" cx="21" cy="21" r="15.915" fill="none"
+                stroke="var(--bucket-expansion)" stroke-width="6"
+                stroke-dasharray="0 100" stroke-dashoffset="25" />
+              <circle id="donut-risk-arc" cx="21" cy="21" r="15.915" fill="none"
+                stroke="var(--bucket-risk)" stroke-width="6"
+                stroke-dasharray="0 100" stroke-dashoffset="25" />
+            </svg>
+            <div class="donut-center-text">
+              <div class="big" id="donut-total">2,369</div>
+              <div class="small">In scope</div>
+            </div>
+          </div>
+          <div class="donut-legend">
+            <div class="row-item" data-drill="bucket:maintain" title="Click to view Maintain accounts">
+              <span class="swatch sw-maintain"></span>
+              <span class="name">Maintain</span>
+              <span class="pct" id="donut-maintain-pct">0.0%</span>
+              <span class="count" id="donut-maintain">0</span>
+            </div>
+            <div class="row-item" data-drill="bucket:expansion" title="Click to view Expansion Ready accounts">
+              <span class="swatch sw-expansion"></span>
+              <span class="name">Expansion Ready</span>
+              <span class="pct" id="donut-expansion-pct">0.0%</span>
+              <span class="count" id="donut-expansion">0</span>
+            </div>
+            <div class="row-item" data-drill="bucket:risk" title="Click to view At-Risk accounts">
+              <span class="swatch sw-risk"></span>
+              <span class="name">At Risk</span>
+              <span class="pct" id="donut-risk-pct">0.0%</span>
+              <span class="count" id="donut-risk">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Breakdown by subgroup</h2>
+        <p class="hint">Each bucket split into its action subgroups &middot; click a row to drill</p>
+        <div class="leaf-list" id="sub-list"></div>
+      </div>
+    </div>
+
+    <!-- Region comparison -->
+    <div class="card">
+      <h2>Mix by Region <span id="region-mix-scope" style="font-weight:400; color:var(--cp-text-muted); font-size:13px;"></span></h2>
+      <p class="hint">Expansion vs At-Risk split per region &middot; click the globe or a slicer to filter</p>
+      <div class="region-explorer">
+        <div class="globe-pick">
+          <svg id="globe" class="globe" viewBox="0 0 200 200" role="group" aria-label="Filter by region — click Americas, EMEA or APAC">
+            <defs>
+              <radialGradient id="globeOcean" cx="38%" cy="34%" r="72%">
+                <stop offset="0%" stop-color="var(--globe-ocean1)" />
+                <stop offset="100%" stop-color="var(--globe-ocean2)" />
+              </radialGradient>
+              <clipPath id="globeClip"><circle cx="100" cy="100" r="92" /></clipPath>
+            </defs>
+            <circle class="globe-sphere" cx="100" cy="100" r="92" />
+            <g class="globe-grat" clip-path="url(#globeClip)">
+              <line x1="100" y1="8" x2="100" y2="192" />
+              <ellipse cx="100" cy="100" rx="30" ry="92" />
+              <ellipse cx="100" cy="100" rx="61" ry="92" />
+              <line x1="8" y1="100" x2="192" y2="100" />
+              <ellipse cx="100" cy="100" rx="92" ry="30" />
+              <ellipse cx="100" cy="100" rx="92" ry="61" />
+            </g>
+            <g clip-path="url(#globeClip)">
+              <g class="globe-region" data-region="Americas" role="button" tabindex="0" aria-label="Filter to Americas" aria-pressed="false">
+                <title>Americas</title>
+                <path d="M40,52 C46,44 58,44 64,50 C72,48 78,56 73,64 C78,70 72,78 63,76 C66,84 56,86 52,80 C44,84 36,78 40,70 C32,68 32,58 40,52 Z" />
+                <path d="M64,98 C72,95 80,101 78,112 C82,123 75,137 69,142 C68,153 59,152 60,141 C55,131 60,118 62,110 C59,105 60,99 64,98 Z" />
+              </g>
+              <g class="globe-region" data-region="EMEA" role="button" tabindex="0" aria-label="Filter to EMEA" aria-pressed="false">
+                <title>EMEA — Europe, Middle East &amp; Africa</title>
+                <path d="M97,52 C104,47 114,49 115,56 C120,59 115,67 107,65 C105,72 95,70 97,62 C92,60 91,55 97,52 Z" />
+                <path d="M105,72 C116,71 125,80 122,93 C126,105 117,118 111,127 C109,139 99,139 99,127 C93,116 96,100 99,90 C96,80 99,74 105,72 Z" />
+              </g>
+              <g class="globe-region" data-region="APAC" role="button" tabindex="0" aria-label="Filter to APAC" aria-pressed="false">
+                <title>APAC — Asia Pacific</title>
+                <path d="M120,58 C129,47 146,44 158,51 C171,52 178,62 172,71 C177,80 165,86 156,83 C147,90 134,87 131,79 C123,83 114,75 119,67 C115,64 115,60 120,58 Z" />
+                <path d="M150,112 C161,109 170,116 167,125 C169,132 158,136 150,131 C143,133 139,124 144,117 C144,113 146,112 150,112 Z" />
+              </g>
+            </g>
+          </svg>
+          <div class="globe-pick__cap">Click a region to filter &middot; click again to clear</div>
+        </div>
+      <div class="region-mix" id="region-mix">
+        <div class="region-mix__row" data-region-key="EMEA">
+          <div class="region-mix__name">EMEA</div>
+          <div class="region-mix__track">
+            <div class="region-mix__seg region-mix__seg--maintain" data-bucket="maintain"></div>
+            <div class="region-mix__seg region-mix__seg--expansion" data-bucket="expansion"></div>
+            <div class="region-mix__seg region-mix__seg--risk" data-bucket="risk"></div>
+          </div>
+          <div class="region-mix__total"><strong>0</strong> accts</div>
+        </div>
+        <div class="region-mix__row" data-region-key="Americas">
+          <div class="region-mix__name">Americas</div>
+          <div class="region-mix__track">
+            <div class="region-mix__seg region-mix__seg--maintain" data-bucket="maintain"></div>
+            <div class="region-mix__seg region-mix__seg--expansion" data-bucket="expansion"></div>
+            <div class="region-mix__seg region-mix__seg--risk" data-bucket="risk"></div>
+          </div>
+          <div class="region-mix__total"><strong>0</strong> accts</div>
+        </div>
+        <div class="region-mix__row" data-region-key="APAC">
+          <div class="region-mix__name">APAC</div>
+          <div class="region-mix__track">
+            <div class="region-mix__seg region-mix__seg--maintain" data-bucket="maintain"></div>
+            <div class="region-mix__seg region-mix__seg--expansion" data-bucket="expansion"></div>
+            <div class="region-mix__seg region-mix__seg--risk" data-bucket="risk"></div>
+          </div>
+          <div class="region-mix__total"><strong>0</strong> accts</div>
+        </div>
+      </div>
+      </div>
+      <div class="region-mix__legend">
+        <span><span class="swatch sw-maintain"></span> Maintain</span>
+        <span><span class="swatch sw-expansion"></span> Expansion Ready</span>
+        <span><span class="swatch sw-risk"></span> At Risk</span>
+        <span style="margin-left:auto;">Splits in-scope accounts by Region &middot; honours Area / Sub Region / Segment / Quarter filters</span>
+      </div>
+    </div>
+
+    <!-- Top 10 risk accounts -->
+    <div class="card">
+      <h2>Top <span id="atrisk-n">10</span> At-Risk accounts <span id="atrisk-scope" style="font-weight:400; color:var(--cp-text-muted); font-size:13px;"></span></h2>
+      <p class="hint">Sorted by eligible Copilot seats &middot; honours all filters &middot; recommended action computed live from atoms</p>
+      <table>
+        <thead>
+          <tr>
+            <th>TPID &middot; Account</th>
+            <th>Classification</th>
+            <th>Bucket</th>
+            <th class="num">Eligible seats</th>
+            <th class="num">Copilot seats</th>
+            <th class="num">Expiring in T-12</th>
+            <th>Suggested play</th>
+          </tr>
+        </thead>
+        <tbody id="atrisk-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Classification decision tree (the exact logic the dashboard runs) -->
+    <div class="card">
+      <h2>Classification decision tree</h2>
+      <p class="hint">The exact branch logic the dashboard runs per account &middot; thresholds are live from the model &middot; click any outcome to drill into its accounts</p>
+
+      <div class="dtree-entry">
+        <span class="dtree-entry__tag">Entry filter</span>
+        <span>Min Account TAM <strong>&ge; <span id="dtree-minseats">50k</span> eligible Copilot seats</strong> &middot; contract <strong>expiring within T-12 months</strong> <span style="color:var(--cp-text-muted);">(deck also admits &ldquo;3 months since last expansion&rdquo;)</span> &mdash; accounts that fail are out of scope.</span>
+      </div>
+
+      <div class="dtree">
+        <div class="dtree-node">Workload depth &mdash; <code>PRU/PAU</code> &ge; <span id="dtree-thr-depth">45%</span>?</div>
+        <div class="dtree-kids">
+
+          <!-- YES: monetisation-ready depth -->
+          <div class="dtree-branch">
+            <span class="dtree-edge dtree-edge--yes">Yes &mdash; deep</span>
+            <div class="dtree-node">Penetration &mdash; <code>PAU/IW elig.</code> &gt; <span id="dtree-thr-pen">50%</span>?</div>
+            <div class="dtree-kids">
+              <div class="dtree-branch">
+                <span class="dtree-edge dtree-edge--yes">Yes</span>
+                <a class="dtree-leaf dtree-leaf--maintain" data-drill="bucket:maintain" title="Drill into Maintain accounts">
+                  <span class="dtree-leaf__code">M</span>
+                  <span class="dtree-leaf__txt"><strong>Maintain</strong> &mdash; <span class="dtree-leaf__sub">healthy, monitor &middot; CSU stewardship</span></span>
+                </a>
+              </div>
+              <div class="dtree-branch">
+                <span class="dtree-edge dtree-edge--no">No &mdash; Expansion Ready</span>
+                <div class="dtree-node">Subgroup &mdash; Pipe (Y/N) &times; Unpaid chat (Y/N)</div>
+                <div class="dtree-kids">
+                  <div class="dtree-branch">
+                    <a class="dtree-leaf dtree-leaf--expansion" data-drill="sub:pipe_chat" title="Drill into Pipe + Chat accounts">
+                      <span class="dtree-leaf__code">P+C</span>
+                      <span class="dtree-leaf__txt"><strong>Pipe + Chat</strong> &mdash; <span class="dtree-leaf__sub">land pipeline + convert chat &middot; AE + STU</span></span>
+                    </a>
+                  </div>
+                  <div class="dtree-branch">
+                    <a class="dtree-leaf dtree-leaf--expansion" data-drill="sub:pipe" title="Drill into Pipe only accounts">
+                      <span class="dtree-leaf__code">P</span>
+                      <span class="dtree-leaf__txt"><strong>Pipe only</strong> &mdash; <span class="dtree-leaf__sub">pipeline within T-6 &middot; AE to land</span></span>
+                    </a>
+                  </div>
+                  <div class="dtree-branch">
+                    <a class="dtree-leaf dtree-leaf--expansion" data-drill="sub:chat" title="Drill into Chat only accounts">
+                      <span class="dtree-leaf__code">C</span>
+                      <span class="dtree-leaf__txt"><strong>Chat only</strong> &mdash; <span class="dtree-leaf__sub">whitespace, AE open &middot; NPSA motion</span></span>
+                    </a>
+                  </div>
+                  <div class="dtree-branch">
+                    <a class="dtree-leaf dtree-leaf--expansion" data-drill="sub:neither" title="Drill into No-signal-yet accounts">
+                      <span class="dtree-leaf__code">&ndash;</span>
+                      <span class="dtree-leaf__txt"><strong>No signal yet</strong> &mdash; <span class="dtree-leaf__sub">depth-only &middot; proactive outreach</span></span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- NO: shallow / under-consuming → At Risk recommended actions -->
+          <div class="dtree-branch">
+            <span class="dtree-edge dtree-edge--no">No &mdash; At Risk</span>
+            <div class="dtree-node">Engagement &mdash; <code>MAU/PAU</code> &ge; <span id="dtree-thr-eng">60%</span>?</div>
+            <div class="dtree-kids">
+              <div class="dtree-branch">
+                <span class="dtree-edge dtree-edge--yes">Yes &mdash; frequent</span>
+                <div class="dtree-node">Depth &mdash; <code>PRU/PAU</code> &lt; <span id="dtree-thr-shallow">20%</span>?</div>
+                <div class="dtree-kids">
+                  <div class="dtree-branch">
+                    <span class="dtree-edge dtree-edge--yes">Yes</span>
+                    <a class="dtree-leaf dtree-leaf--action" data-drill="sub:bestpractice" title="Drill into Best-practice expansion accounts">
+                      <span class="dtree-leaf__code">A1</span>
+                      <span class="dtree-leaf__txt"><strong>Best-practice expansion</strong> &mdash; <span class="dtree-leaf__sub">new use cases &middot; CSU</span></span>
+                    </a>
+                  </div>
+                  <div class="dtree-branch">
+                    <span class="dtree-edge dtree-edge--no">No &mdash; PRU/PAU 20&ndash;45%</span>
+                    <a class="dtree-leaf dtree-leaf--action" data-drill="sub:stickiness" title="Drill into Drive-stickiness accounts">
+                      <span class="dtree-leaf__code">A2</span>
+                      <span class="dtree-leaf__txt"><strong>Drive stickiness</strong> &mdash; <span class="dtree-leaf__sub">meaningful workflows &middot; CSU</span></span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+              <div class="dtree-branch">
+                <span class="dtree-edge dtree-edge--no">No &mdash; disengaged</span>
+                <a class="dtree-leaf dtree-leaf--risk" data-drill="sub:reengage" title="Drill into Re-engage accounts">
+                  <span class="dtree-leaf__code">A3</span>
+                  <span class="dtree-leaf__txt"><strong>Re-engage</strong> &mdash; <span class="dtree-leaf__sub">disengaged &middot; champion play &middot; CSU &rarr; ATU</span></span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="dtree-foot">
+        <span><span class="swatch sw-maintain"></span> Maintain</span>
+        <span><span class="swatch sw-expansion"></span> Expansion Ready</span>
+        <span><span class="swatch sw-risk"></span> At Risk</span>
+        <span style="margin-left:auto;">Source: Copilot Customer Classification framework &middot; interactive demo with synthetic data</span>
+      </div>
+    </div>
+
+    <!-- Bucket movement (QoQ) -->
+    <div class="card">
+      <h2>Bucket movement <span id="movement-scope" style="font-weight:400; color:var(--cp-text-muted); font-size:13px;"></span></h2>
+      <p class="hint">Quarter-over-quarter transitions between buckets &middot; honours Region / Area / Sub Region / Segment filters &middot; quarter follows the selector</p>
+      <div class="movement-grid-wrap">
+        <div class="move-kpis">
+          <div class="move-kpi move-kpi--up"><div class="move-kpi__val" id="move-improved">0</div><div class="move-kpi__lbl">&uarr; Improved</div></div>
+          <div class="move-kpi move-kpi--down"><div class="move-kpi__val" id="move-slipped">0</div><div class="move-kpi__lbl">&darr; Slipped</div></div>
+          <div class="move-kpi move-kpi--flat"><div class="move-kpi__val" id="move-stable">0</div><div class="move-kpi__lbl">&rarr; Stable</div></div>
+          <div class="move-kpi move-kpi--new"><div class="move-kpi__val" id="move-new">0</div><div class="move-kpi__lbl">New in scope</div></div>
+        </div>
+        <div class="movement-cols">
+          <div class="movement-grid" id="movement-grid"></div>
+          <div class="movement-trend-wrap">
+            <div class="movement-trend" id="movement-trend"></div>
+            <div class="movement-trend-cap">In-scope accounts by bucket, per quarter</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <div>
+        Synthetic sample data &middot; classification and filtering computed live in the browser &middot; per-quarter grain
+      </div>
+      <div>
+        Append <code>?clawpilotTheme=dark</code> or <code>?clawpilotTheme=light</code> to override theme
+      </div>
+    </footer>
+
+  </div>
+
+  <script src="tpid-atoms.js"></script>
+  <script>
+    (() => {
+      // V3 classifier: compute Maintain/Expansion/Action/Risk per row from atomic signals
+      // (PRU, PAU, MAU, EligibleSeats, pipeM, unpaidChat, expiringT12). Data is per-quarter
+      // (Q1-Q4 x TPID) — synthetic sample data, not real customer accounts.
+      // Filtering, classification, and at-risk top-N all run live in the browser.
+      const ATOMS = (typeof window !== 'undefined' && window.ATOMS_DATA) || { thresholds: {}, rows: [] };
+      const THR = Object.assign(
+        { depth: 0.45, pen: 0.50, actEngaged: 0.60, actShallow: 0.20, minSeats: 50000, expiringMin: 0 },
+        ATOMS.thresholds || {}
+      );
+
+      // --- Filter taxonomy derived once from the data ---------------------
+      const TAXONOMY = (() => {
+        const quarters = new Set();
+        const regions  = new Set();
+        const segments = new Set();
+        const areasByRegion = {};            // region -> Set(area)
+        const subsByRegionArea = {};         // "region|area" -> Set(subRegion)
+        for (const r of ATOMS.rows || []) {
+          if (r.quarter) quarters.add(r.quarter);
+          if (r.region)  regions.add(r.region);
+          if (r.segment) segments.add(r.segment);
+          if (r.region && r.area) {
+            (areasByRegion[r.region] ||= new Set()).add(r.area);
+            const key = r.region + '|' + r.area;
+            (subsByRegionArea[key] ||= new Set()).add(r.subRegion || '');
+          }
+        }
+        const sortStr = (a, b) => String(a).localeCompare(String(b));
+        const toSorted = (s) => Array.from(s).sort(sortStr);
+        const areasByRegionArr = {};
+        for (const [k, v] of Object.entries(areasByRegion)) areasByRegionArr[k] = toSorted(v);
+        const subsByRegionAreaArr = {};
+        for (const [k, v] of Object.entries(subsByRegionArea)) {
+          subsByRegionAreaArr[k] = toSorted(v).filter(Boolean);
+        }
+        return {
+          quarters: toSorted(quarters),
+          regions:  toSorted(regions),
+          segments: toSorted(segments),
+          areasByRegion: areasByRegionArr,
+          subsByRegionArea: subsByRegionAreaArr
+        };
+      })();
+
+      const classify = (row) => {
+        const depth   = row.pau ? row.pru / row.pau : 0;                      // PRU/PAU  workload depth
+        const pen     = row.eligibleSeats ? row.pau / row.eligibleSeats : 0;  // PAU/IW   penetration
+        const useFreq = row.pau ? row.mau / row.pau : 0;                      // MAU/PAU  engagement
+        const inScope = row.eligibleSeats >= THR.minSeats && row.expiringT12 > THR.expiringMin;
+        if (!inScope) return null;
+        // 1) Maintain — deep AND well-penetrated
+        if (depth >= THR.depth && pen > THR.pen) return { bucket: 'maintain', sub: 'maintain' };
+        // 2) Expansion Ready — deep, not yet Maintain → Pipe × Unpaid-chat 2×2
+        if (depth >= THR.depth) {
+          const hasPipe = row.pipeM > 0;
+          const hasChat = row.unpaidChat > 0;
+          const sub = (hasPipe && hasChat) ? 'pipe_chat' : hasPipe ? 'pipe' : hasChat ? 'chat' : 'neither';
+          return { bucket: 'expansion', sub };
+        }
+        // 3) At Risk — shallow depth → recommended-action bands on engagement (MAU/PAU)
+        if (useFreq >= THR.actEngaged && depth < THR.actShallow) return { bucket: 'risk', sub: 'bestpractice' };
+        if (useFreq >= THR.actEngaged)                           return { bucket: 'risk', sub: 'stickiness' };
+        return { bucket: 'risk', sub: 'reengage' };
+      };
+
+      // Latest quarter per TPID — used when Quarter = "All" so each account is
+      // counted once (most recent snapshot) instead of 4x summed across the year.
+      const LATEST_Q_BY_TPID = (() => {
+        const rank = { Q1: 1, Q2: 2, Q3: 3, Q4: 4 };
+        const map = Object.create(null);
+        for (const r of ATOMS.rows || []) {
+          const cur = map[r.tpid];
+          if (!cur || (rank[r.quarter] || 0) > (rank[cur] || 0)) map[r.tpid] = r.quarter;
+        }
+        return map;
+      })();
+
+      // Quarter ordering + per-TPID per-quarter row index (drives QoQ movement).
+      const QORDER = ['Q1', 'Q2', 'Q3', 'Q4'];
+      const ROW_BY_TPID_Q = (() => {
+        const map = Object.create(null);
+        for (const r of ATOMS.rows || []) {
+          (map[r.tpid] || (map[r.tpid] = Object.create(null)))[r.quarter] = r;
+        }
+        return map;
+      })();
+
+      // Single shared predicate used by every aggregation in the dashboard.
+      // skip lets a section ignore a specific filter (e.g. region-mix wants every region).
+      const rowMatches = (r, f, skip) => {
+        if ((!skip || skip !== 'quarter')  && f.quarter) {
+          if (f.quarter === 'All') {
+            // "All quarters" = latest snapshot per TPID (avoids 4x double-counting).
+            if (LATEST_Q_BY_TPID[r.tpid] !== r.quarter) return false;
+          } else if (r.quarter !== f.quarter) {
+            return false;
+          }
+        }
+        if ((!skip || skip !== 'region')   && f.region   && f.region   !== 'All' && r.region   !== f.region)   return false;
+        if ((!skip || skip !== 'area')     && f.area     && f.area     !== 'All' && r.area     !== f.area)     return false;
+        if ((!skip || skip !== 'subregion')&& f.subregion&& f.subregion!== 'All' && r.subRegion!== f.subregion) return false;
+        if ((!skip || skip !== 'segment')  && f.segment  && f.segment  !== 'All' && r.segment  !== f.segment)  return false;
+        return true;
+      };
+
+      // === 3-bucket model: Maintain · Expansion Ready · At Risk ===========
+      // Each bucket carries subgroups that drive the drill chips, the breakdown
+      // card, and the recommended play. Order here is the display order.
+      const SUBGROUPS = {
+        maintain: [
+          { key: 'maintain',     label: 'Maintain',                 hint: 'Healthy \u2014 steward the renewal',              play: 'Steward renewal \u00b7 CSU' }
+        ],
+        expansion: [
+          { key: 'pipe_chat',    label: 'Pipe + Chat',              hint: 'Pipeline covered & unpaid-chat signal',          play: 'Land pipeline + convert chat \u00b7 AE + STU' },
+          { key: 'pipe',         label: 'Pipe only',                hint: 'Pipeline within T-6 (CP+CC)',                    play: 'Land pipeline \u00b7 AE' },
+          { key: 'chat',         label: 'Chat only',                hint: 'Unpaid-chat whitespace \u2014 AE open',          play: 'NPSA whitespace motion \u00b7 AE' },
+          { key: 'neither',      label: 'No signal yet',            hint: 'Depth-only \u2014 proactive outreach',           play: 'Proactive outreach \u00b7 CSU + STU' }
+        ],
+        risk: [
+          { key: 'bestpractice', label: 'Best-practice expansion',  hint: 'Frequent (MAU/PAU \u2265 60%), very shallow (PRU/PAU < 20%)', play: 'Drive best-practice expansion / new use cases \u00b7 CSU' },
+          { key: 'stickiness',   label: 'Drive stickiness',         hint: 'Frequent (MAU/PAU \u2265 60%), shallow (PRU/PAU 20\u201345%)', play: 'Drive stickiness / embed in meaningful workflows \u00b7 CSU' },
+          { key: 'reengage',     label: 'Re-engage',                hint: 'Disengaged (MAU/PAU < 60%)',                     play: 'Re-engage / champion play \u00b7 CSU \u2192 ATU' }
+        ]
+      };
+      const BUCKET_OF_SUB = {}, SUB_LABEL = {}, SUB_HINT = {}, SUB_PLAY = {}, SUB_KEYS = [];
+      Object.entries(SUBGROUPS).forEach(([bucket, subs]) => subs.forEach((s) => {
+        BUCKET_OF_SUB[s.key] = bucket; SUB_LABEL[s.key] = s.label;
+        SUB_HINT[s.key] = s.hint; SUB_PLAY[s.key] = s.play; SUB_KEYS.push(s.key);
+      }));
+      const BUCKET_LABEL = { maintain: 'Maintain', expansion: 'Expansion Ready', risk: 'At Risk' };
+      const BUCKET_RANK  = { risk: 0, expansion: 1, maintain: 2 }; // higher = healthier
+
+      const aggregate = (filter, skip) => {
+        const acc = {
+          inScope: 0, maintain: 0, expansion: 0, risk: 0,
+          pipeM: 0, chatSeats: 0,
+          subs: {}, subSeats: {}
+        };
+        for (let i = 0; i < SUB_KEYS.length; i++) { acc.subs[SUB_KEYS[i]] = 0; acc.subSeats[SUB_KEYS[i]] = 0; }
+        const rows = ATOMS.rows || [];
+        for (let i = 0; i < rows.length; i++) {
+          const r = rows[i];
+          if (!rowMatches(r, filter, skip)) continue;
+          const c = classify(r);
+          if (!c) continue;
+          acc.inScope++;
+          acc[c.bucket]++;
+          acc.subs[c.sub]++;
+          acc.subSeats[c.sub] += r.paidSeats || 0;
+          acc.pipeM    += r.pipeM      || 0;
+          acc.chatSeats+= r.unpaidChat || 0;
+        }
+        return acc;
+      };
+
+      const $ = (id) => document.getElementById(id);
+      const sel = {
+        time: $('f-time'), region: $('f-region'), area: $('f-area'),
+        subregion: $('f-subregion'), segment: $('f-segment')
+      };
+
+      const fmtInt = (n) => Math.round(n).toLocaleString('en-US');
+      const fmtMoney = (m) => {
+        if (m <= -1)  return `-$${Math.abs(m).toFixed(2)}M`;
+        if (m < 0)    return `-$${(Math.abs(m) * 1000).toFixed(0)}K`;
+        if (m >= 1000) return `$${(m / 1000).toFixed(2)}B`;
+        if (m >= 10)  return `$${m.toFixed(1)}M`;
+        if (m >= 1)   return `$${m.toFixed(2)}M`;
+        return `$${(m * 1000).toFixed(0)}K`;
+      };
+      const fmtSeats = (n) => {
+        if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
+        if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
+        return fmtInt(n);
+      };
+      const pct = (n, d) => d > 0 ? `${((n / d) * 100).toFixed(1)}%` : '0.0%';
+
+      const curFilter = () => ({
+        quarter:   sel.time.value,
+        region:    sel.region.value,
+        area:      sel.area.value,
+        subregion: sel.subregion.value,
+        segment:   sel.segment.value
+      });
+
+      const scopeLabel = () => {
+        const f = curFilter();
+        const parts = [f.quarter, f.region, f.area, f.subregion, f.segment]
+          .filter((v) => v && v !== 'All');
+        return parts.length ? parts.join(' \u00b7 ') : 'all-up';
+      };
+
+      // --- Dropdown population --------------------------------------------
+      const fillSelect = (el, values, currentValue, includeAll) => {
+        const prev = currentValue !== undefined ? currentValue : el.value;
+        el.innerHTML = '';
+        if (includeAll) {
+          const o = document.createElement('option');
+          o.value = 'All'; o.textContent = 'All';
+          el.appendChild(o);
+        }
+        for (const v of values) {
+          const o = document.createElement('option');
+          o.value = v; o.textContent = v;
+          el.appendChild(o);
+        }
+        el.value = Array.from(el.options).some((o) => o.value === prev) ? prev : el.options[0].value;
+      };
+
+      const populateTime    = () => fillSelect(sel.time,    TAXONOMY.quarters, sel.time.value || TAXONOMY.quarters[TAXONOMY.quarters.length - 1], true);
+      const populateRegion  = () => fillSelect(sel.region,  TAXONOMY.regions,  undefined, true);
+      const populateSegment = () => fillSelect(sel.segment, TAXONOMY.segments, undefined, true);
+      const populateArea = () => {
+        const r = sel.region.value;
+        const list = (r === 'All') ? [] : (TAXONOMY.areasByRegion[r] || []);
+        fillSelect(sel.area, list, undefined, true);
+      };
+      const populateSubRegion = () => {
+        const r = sel.region.value;
+        const a = sel.area.value;
+        const list = (r === 'All' || a === 'All') ? [] : (TAXONOMY.subsByRegionArea[r + '|' + a] || []);
+        fillSelect(sel.subregion, list, undefined, true);
+      };
+
+      const update = () => {
+        const f = curFilter();
+        const d = aggregate(f);
+        const total = d.inScope;
+
+        $('kpi-inscope').textContent = fmtInt(d.inScope);
+        $('kpi-expansion').textContent = fmtInt(d.expansion);
+        $('kpi-expansion-pct').textContent = pct(d.expansion, total);
+        $('kpi-risk').textContent = fmtInt(d.risk);
+        $('kpi-risk-pct').textContent = pct(d.risk, total);
+        $('kpi-pipe').textContent = fmtMoney(d.pipeM);
+        $('kpi-chat').textContent = fmtSeats(d.chatSeats);
+
+        $('donut-total').textContent = fmtInt(total);
+        $('donut-hint').textContent = `By bucket \u00b7 ${fmtInt(total)} in-scope accounts`;
+        $('donut-maintain').textContent = fmtInt(d.maintain);
+        $('donut-expansion').textContent = fmtInt(d.expansion);
+        $('donut-risk').textContent = fmtInt(d.risk);
+        $('donut-maintain-pct').textContent = pct(d.maintain, total);
+        $('donut-expansion-pct').textContent = pct(d.expansion, total);
+        $('donut-risk-pct').textContent = pct(d.risk, total);
+
+        // Donut arcs: each bucket starts where the previous one ended (offset = 25 - sum_so_far)
+        const mPct = total > 0 ? (d.maintain  / total) * 100 : 0;
+        const ePct = total > 0 ? (d.expansion / total) * 100 : 0;
+        const rPct = total > 0 ? (d.risk      / total) * 100 : 0;
+        const setArc = (id, len, startPct) => {
+          const el = $(id);
+          el.setAttribute('stroke-dasharray', `${len.toFixed(2)} ${(100 - len).toFixed(2)}`);
+          el.setAttribute('stroke-dashoffset', ((25 - startPct + 100) % 100).toFixed(2));
+        };
+        setArc('donut-maintain-arc',  mPct, 0);
+        setArc('donut-expansion-arc', ePct, mPct);
+        setArc('donut-risk-arc',      rPct, mPct + ePct);
+
+        renderSubList(d);
+
+        // Region mix: rebuild rows for every region using the rest of the filter selection.
+        const regionData = (name) => aggregate(Object.assign({}, f, { region: name }));
+        const regionRows = TAXONOMY.regions.map((name) => Object.assign({ name }, regionData(name)));
+        renderRegionMix(regionRows, f.segment);
+
+        renderMovement(f);
+
+        $('scope-label').textContent = scopeLabel();
+        renderAtRiskTable(f);
+        syncGlobe();
+      };
+
+      // Subgroup breakdown card: grouped by bucket, bar widths relative to the
+      // largest subgroup so small bands stay visible.
+      const renderSubList = (d) => {
+        const host = $('sub-list');
+        if (!host) return;
+        const maxSub = Math.max(1, ...SUB_KEYS.map((k) => d.subs[k] || 0));
+        const bucketColor = { maintain: 'var(--bucket-maintain)', expansion: 'var(--bucket-expansion)', risk: 'var(--bucket-risk)' };
+        let html = '';
+        Object.entries(SUBGROUPS).forEach(([bucket, subs]) => {
+          const bTotal = subs.reduce((s, sg) => s + (d.subs[sg.key] || 0), 0);
+          html += `<div class="sub-group-head"><span class="swatch sw-${bucket === 'risk' ? 'risk' : bucket}"></span>`
+                + `${BUCKET_LABEL[bucket]} <span class="sub-group-total">${fmtInt(bTotal)}</span></div>`;
+          subs.forEach((sg) => {
+            const v = d.subs[sg.key] || 0;
+            const s = d.subSeats[sg.key] || 0;
+            const w = (v / maxSub * 100).toFixed(1);
+            html += `<div class="leaf" data-drill="sub:${sg.key}" title="Drill into ${sg.label} accounts">`
+                  + `<div class="meta"><span class="leaf-label">${sg.label}</span>`
+                  + `<span style="color:var(--cp-text-muted);">${sg.hint}</span></div>`
+                  + `<div><div class="count">${fmtInt(v)}</div>`
+                  + `<div class="count-sub">${fmtInt(s)} Copilot seats</div></div>`
+                  + `<div class="bar-track"><div class="bar-fill" style="width:${w}%; background:${bucketColor[bucket]};"></div></div>`
+                  + `</div>`;
+          });
+        });
+        host.innerHTML = html;
+      };
+
+      // Region-mix renderer: rebuild rows so DOM always matches TAXONOMY.regions order
+      const renderRegionMix = (regionRows, segmentValue) => {
+        const host = $('region-mix');
+        const maxRegionTotal = Math.max(1, ...regionRows.map((r) => r.inScope));
+        $('region-mix-scope').textContent = segmentValue === 'All' ? '\u00b7 all segments' : `\u00b7 ${segmentValue} only`;
+        host.innerHTML = regionRows.map((row) => {
+          const trackWidth = (row.inScope / maxRegionTotal) * 100;
+          const bucketPct = (v) => row.inScope > 0 ? (v / row.inScope) * 100 : 0;
+          const segs = [
+            { key: 'maintain',  val: row.maintain },
+            { key: 'expansion', val: row.expansion },
+            { key: 'risk',      val: row.risk }
+          ];
+          const segHtml = segs.map(({ key, val }) => {
+            const segPct = bucketPct(val);
+            const widthPct = (segPct * trackWidth / 100).toFixed(2);
+            const label = val >= 50 ? fmtInt(val) : '';
+            const title = `${key[0].toUpperCase()}${key.slice(1)}: ${fmtInt(val)} (${pct(val, row.inScope)})`;
+            return `<div class="region-mix__seg region-mix__seg--${key}" data-bucket="${key}" style="width:${widthPct}%" title="${title}">${label}</div>`;
+          }).join('');
+          return `<div class="region-mix__row" data-region-key="${row.name}">`
+               +   `<div class="region-mix__name">${row.name}</div>`
+               +   `<div class="region-mix__track">${segHtml}</div>`
+               +   `<div class="region-mix__total"><strong>${fmtInt(row.inScope)}</strong> accts</div>`
+               + `</div>`;
+        }).join('');
+      };
+
+      // QoQ movement: compares each TPID's bucket in the selected quarter vs the
+      // prior quarter (honours region/area/sub/segment filters; quarter is driven
+      // by the selection, defaulting to the latest when "All"). Renders a 3×3
+      // transition matrix, net-flow KPIs, and a per-quarter trend strip.
+      const movementMatches = (r, f) =>
+        (f.region    === 'All' || r.region    === f.region) &&
+        (f.area      === 'All' || r.area      === f.area) &&
+        (f.subregion === 'All' || r.subRegion === f.subregion) &&
+        (f.segment   === 'All' || r.segment   === f.segment);
+
+      const renderMovement = (f) => {
+        const host = $('movement-grid');
+        if (!host) return;
+        const curQ = (f.quarter && f.quarter !== 'All') ? f.quarter : QORDER[QORDER.length - 1];
+        const ci = QORDER.indexOf(curQ);
+        const prevQ = ci > 0 ? QORDER[ci - 1] : null;
+        $('movement-scope').textContent = prevQ ? `\u00b7 ${prevQ} \u2192 ${curQ}` : `\u00b7 ${curQ} (no prior quarter)`;
+
+        const order = ['maintain', 'expansion', 'risk'];
+        const mat = { maintain: { maintain: 0, expansion: 0, risk: 0 }, expansion: { maintain: 0, expansion: 0, risk: 0 }, risk: { maintain: 0, expansion: 0, risk: 0 } };
+        let improved = 0, slipped = 0, stable = 0, fresh = 0;
+        if (prevQ) {
+          for (const tpid in ROW_BY_TPID_Q) {
+            const cur = ROW_BY_TPID_Q[tpid][curQ];
+            if (!cur || !movementMatches(cur, f)) continue;
+            const cc = classify(cur);
+            if (!cc) continue;
+            const prev = ROW_BY_TPID_Q[tpid][prevQ];
+            const pc = prev ? classify(prev) : null;
+            if (!pc) { fresh++; continue; }
+            mat[pc.bucket][cc.bucket]++;
+            const delta = BUCKET_RANK[cc.bucket] - BUCKET_RANK[pc.bucket];
+            if (delta > 0) improved++; else if (delta < 0) slipped++; else stable++;
+          }
+        }
+
+        $('move-improved').textContent = fmtInt(improved);
+        $('move-slipped').textContent  = fmtInt(slipped);
+        $('move-stable').textContent   = fmtInt(stable);
+        $('move-new').textContent      = fmtInt(fresh);
+
+        // 3×3 transition matrix (rows = prior bucket, cols = current bucket)
+        const maxCell = Math.max(1, ...order.flatMap((p) => order.map((c) => mat[p][c])));
+        const cell = (p, c) => {
+          const v = mat[p][c];
+          const diag = p === c;
+          const dir = BUCKET_RANK[c] - BUCKET_RANK[p];
+          const tone = diag ? 'mv-diag' : dir > 0 ? 'mv-up' : 'mv-down';
+          const intensity = (v / maxCell).toFixed(2);
+          return `<div class="mv-cell ${tone}" style="--i:${intensity}" title="${BUCKET_LABEL[p]} \u2192 ${BUCKET_LABEL[c]}: ${fmtInt(v)}">${v ? fmtInt(v) : '\u00b7'}</div>`;
+        };
+        let grid = `<div class="mv-corner">${prevQ || '\u2014'} \u2192 ${curQ}</div>`;
+        order.forEach((c) => grid += `<div class="mv-colhead mv-head-${c}">to ${BUCKET_LABEL[c]}</div>`);
+        order.forEach((p) => {
+          grid += `<div class="mv-rowhead mv-head-${p}">from ${BUCKET_LABEL[p]}</div>`;
+          order.forEach((c) => grid += cell(p, c));
+        });
+        host.innerHTML = grid;
+
+        // Per-quarter trend strip (bucket counts, honouring non-quarter filters)
+        const trend = QORDER.map((q) => {
+          const a = { maintain: 0, expansion: 0, risk: 0, total: 0 };
+          for (const tpid in ROW_BY_TPID_Q) {
+            const r = ROW_BY_TPID_Q[tpid][q];
+            if (!r || !movementMatches(r, f)) continue;
+            const c = classify(r);
+            if (!c) continue;
+            a[c.bucket]++; a.total++;
+          }
+          return Object.assign({ q }, a);
+        });
+        const maxT = Math.max(1, ...trend.map((t) => t.total));
+        $('movement-trend').innerHTML = trend.map((t) => {
+          const seg = (key) => {
+            const h = t.total > 0 ? (t[key] / maxT * 100) : 0;
+            return `<div class="tr-seg tr-${key}" style="height:${h.toFixed(1)}%" title="${BUCKET_LABEL[key]} ${t.q}: ${fmtInt(t[key])}"></div>`;
+          };
+          const isCur = t.q === curQ;
+          return `<div class="tr-col${isCur ? ' tr-col--cur' : ''}">`
+               +   `<div class="tr-stack">${seg('risk')}${seg('expansion')}${seg('maintain')}</div>`
+               +   `<div class="tr-label">${t.q}</div>`
+               +   `<div class="tr-total">${fmtInt(t.total)}</div>`
+               + `</div>`;
+        }).join('');
+      };
+
+      const renderAtRiskTable = (f) => {
+        const tbody = $('atrisk-tbody');
+        const rows = ATOMS.rows || [];
+        const matches = [];
+        for (let i = 0; i < rows.length; i++) {
+          const r = rows[i];
+          if (!rowMatches(r, f)) continue;
+          const c = classify(r);
+          if (!c || c.bucket !== 'risk') continue;
+          matches.push({ row: r, sub: c.sub });
+        }
+        matches.sort((a, b) => (b.row.eligibleSeats || 0) - (a.row.eligibleSeats || 0));
+        const top = matches.slice(0, 10);
+        const scopeBits = [];
+        if (f.quarter   !== 'All') scopeBits.push(f.quarter);
+        if (f.region    !== 'All') scopeBits.push(f.region);
+        if (f.area      !== 'All') scopeBits.push(f.area);
+        if (f.subregion !== 'All') scopeBits.push(f.subregion);
+        if (f.segment   !== 'All') scopeBits.push(f.segment);
+        $('atrisk-scope').textContent = scopeBits.length ? '\u00b7 ' + scopeBits.join(' \u00b7 ') : '\u00b7 worldwide';
+        $('atrisk-n').textContent = top.length || 0;
+        if (top.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: var(--cp-text-muted); padding:20px;">No At-Risk accounts in this slice.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = top.map(({ row, sub }) => {
+          const play = SUB_PLAY[sub] || '\u2014';
+          const urgent = row.expiringT12 > 50000;
+          const playText = urgent ? play + ' \u00b7 urgent' : play;
+          return '<tr class="atrisk-row" data-drill="account:' + row.tpid + '" title="Click for full account detail">'
+            + '<td><strong>' + row.tpid + '</strong> &middot; ' + row.name + '</td>'
+            + '<td>' + (SUB_LABEL[sub] || sub) + '</td>'
+            + '<td><span class="pill pill-risk">At Risk</span></td>'
+            + '<td class="num">' + fmtInt(row.eligibleSeats) + '</td>'
+            + '<td class="num">' + fmtInt(row.paidSeats) + '</td>'
+            + '<td class="num">' + fmtInt(row.expiringT12) + '</td>'
+            + '<td>' + playText + '</td>'
+            + '</tr>';
+        }).join('');
+      };
+
+      // --- URL state sync: serialise filters to ?query so views are shareable ---
+      const URL_KEYS = { quarter: 'q', region: 'r', area: 'a', subregion: 's', segment: 'g' };
+      const writeUrl = () => {
+        const f = curFilter();
+        const params = new URLSearchParams(window.location.search);
+        // Preserve clawpilotTheme if present.
+        const themeParam = params.get('clawpilotTheme');
+        const out = new URLSearchParams();
+        if (themeParam) out.set('clawpilotTheme', themeParam);
+        Object.keys(URL_KEYS).forEach((k) => { if (f[k] && f[k] !== 'All') out.set(URL_KEYS[k], f[k]); });
+        const qs = out.toString();
+        const url = window.location.pathname + (qs ? '?' + qs : '');
+        if (url !== window.location.pathname + window.location.search) {
+          window.history.replaceState(null, '', url);
+        }
+        const resetBtn = document.getElementById('f-reset');
+        if (resetBtn) {
+          const anyApplied = Object.keys(URL_KEYS).some((k) => f[k] && f[k] !== 'All');
+          resetBtn.disabled = !anyApplied;
+        }
+      };
+      const applyUrl = () => {
+        const params = new URLSearchParams(window.location.search);
+        const setIfValid = (selEl, value) => {
+          if (!value) return;
+          for (let i = 0; i < selEl.options.length; i++) {
+            if (selEl.options[i].value === value) { selEl.value = value; return; }
+          }
+        };
+        setIfValid(sel.time,    params.get(URL_KEYS.quarter));
+        setIfValid(sel.region,  params.get(URL_KEYS.region));
+        populateArea();      setIfValid(sel.area,      params.get(URL_KEYS.area));
+        populateSubRegion(); setIfValid(sel.subregion, params.get(URL_KEYS.subregion));
+        setIfValid(sel.segment, params.get(URL_KEYS.segment));
+      };
+
+      // Wiring: Region drives Area; Area drives Sub Region; all changes call update()
+      sel.region.addEventListener('change', () => { populateArea(); populateSubRegion(); update(); writeUrl(); });
+      sel.area.addEventListener('change', () => { populateSubRegion(); update(); writeUrl(); });
+      sel.subregion.addEventListener('change', () => { update(); writeUrl(); });
+      sel.segment.addEventListener('change', () => { update(); writeUrl(); });
+      sel.time.addEventListener('change', () => { update(); writeUrl(); });
+
+      // --- Clickable globe region picker (mirrors the Region slicer) ---
+      const globeEl = document.getElementById('globe');
+      const syncGlobe = () => {
+        if (!globeEl) return;
+        const r = sel.region.value;
+        const active = !!r && r !== 'All';
+        globeEl.classList.toggle('has-active', active);
+        globeEl.querySelectorAll('.globe-region').forEach((g) => {
+          const on = active && g.getAttribute('data-region') === r;
+          g.classList.toggle('is-active', on);
+          g.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+      };
+      if (globeEl) {
+        const pickRegion = (name) => {
+          if (!name) return;
+          sel.region.value = (sel.region.value === name) ? 'All' : name;
+          sel.region.dispatchEvent(new Event('change')); // reuse slicer wiring → populate + update + writeUrl
+        };
+        globeEl.querySelectorAll('.globe-region').forEach((g) => {
+          g.addEventListener('click', () => pickRegion(g.getAttribute('data-region')));
+          g.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); pickRegion(g.getAttribute('data-region')); }
+          });
+        });
+      }
+
+      // Reset filters button: clear every applied slicer and re-render
+      const resetBtn = document.getElementById('f-reset');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          sel.time.value = TAXONOMY.quarters[TAXONOMY.quarters.length - 1] || 'All';
+          sel.region.value = 'All';
+          sel.segment.value = 'All';
+          populateArea();
+          populateSubRegion();
+          update();
+          writeUrl();
+        });
+      }
+
+      // Boot
+      populateTime();
+      populateRegion();
+      populateSegment();
+      populateArea();
+      populateSubRegion();
+      applyUrl();
+      // Stamp meta block with extraction time from atoms
+      if (ATOMS.generatedAt) {
+        const stamp = new Date(ATOMS.generatedAt);
+        const txt = isNaN(stamp) ? ATOMS.generatedAt : stamp.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        const meta = document.querySelector('.meta-block div');
+        if (meta) meta.innerHTML = 'Data extracted <strong>' + txt + '</strong> \u00b7 <span id="scope-label">all-up</span>';
+      }
+      update();
+      writeUrl();
+
+      // --- Drilldown modal -------------------------------------------------
+      const wireDrilldown = () => {
+      const modal = document.getElementById('drill-modal');
+      const modalTitle = document.getElementById('drill-title');
+      const modalMeta = document.getElementById('drill-meta');
+      const modalTbody = document.getElementById('drill-tbody');
+      const modalSearch = document.getElementById('drill-search');
+      const modalClose = document.getElementById('drill-close');
+      const modalCsv = document.getElementById('drill-csv');
+      const modalBackdrop = modal;
+      const bucketLabels = BUCKET_LABEL;
+      const drillChips = document.getElementById('drill-chips');
+
+      let drillRows = [];
+      let drillSort = { col: 'eligibleSeats', dir: -1 };
+      let drillTitlePrefix = 'Drilldown';
+      let drillSubFilter = null;   // active subgroup chip (null = whole bucket)
+
+      const closeModal = () => modal.classList.remove('is-open');
+      modalClose.addEventListener('click', closeModal);
+      modalBackdrop.addEventListener('click', (e) => { if (e.target === modalBackdrop) closeModal(); });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { closeModal(); return; }
+        // '/' focuses the search box when the drill modal is open and the user
+        // is not already typing in another field.
+        if (e.key === '/' && modal.classList.contains('is-open')) {
+          const t = e.target;
+          const inField = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+          if (!inField) { e.preventDefault(); modalSearch.focus(); modalSearch.select(); }
+        }
+      });
+
+      const renderDrillTable = () => {
+        const q = modalSearch.value.trim().toLowerCase();
+        let rows = drillRows;
+        if (drillSubFilter) rows = rows.filter((r) => r._sub === drillSubFilter);
+        if (q) rows = rows.filter((r) => r.name.toLowerCase().includes(q) || String(r.tpid).includes(q));
+        const { col, dir } = drillSort;
+        rows = rows.slice().sort((a, b) => {
+          const va = a[col], vb = b[col];
+          if (typeof va === 'number') return (va - vb) * dir;
+          return String(va).localeCompare(String(vb)) * dir;
+        });
+        const cap = 500;
+        const shown = rows.slice(0, cap);
+        modalMeta.textContent = rows.length > cap
+          ? `Showing top ${cap} of ${fmtInt(rows.length)} accounts`
+          : `${fmtInt(rows.length)} accounts`;
+        modalTbody.innerHTML = shown.map((r) => {
+          const depth   = r.pau ? (r.pru / r.pau) * 100 : 0;
+          const pen     = r.eligibleSeats ? (r.pau / r.eligibleSeats) * 100 : 0;
+          const useFreq = r.pau ? (r.mau / r.pau) * 100 : 0;
+          const bucketCls = `drill-pill drill-pill--${r._bucket}`;
+          return '<tr>'
+            + '<td><strong>' + r.tpid + '</strong> &middot; ' + r.name + '</td>'
+            + '<td>' + (r.region || '\u2014') + '</td>'
+            + '<td>' + (r.area || '\u2014') + '</td>'
+            + '<td>' + (r.subRegion || '\u2014') + '</td>'
+            + '<td>' + (r.segment || '\u2014') + '</td>'
+            + '<td>' + (r.quarter || '\u2014') + '</td>'
+            + '<td><span class="' + bucketCls + '">' + r._subLabel + '</span></td>'
+            + '<td class="num">' + fmtInt(r.eligibleSeats) + '</td>'
+            + '<td class="num">' + fmtInt(r.paidSeats || 0) + '</td>'
+            + '<td class="num">' + depth.toFixed(1) + '%</td>'
+            + '<td class="num">' + pen.toFixed(1) + '%</td>'
+            + '<td class="num">' + useFreq.toFixed(1) + '%</td>'
+            + '<td class="num">' + fmtMoney(r.pipeM) + '</td>'
+            + '<td class="num">' + fmtInt(r.unpaidChat) + '</td>'
+            + '<td class="num">' + fmtInt(r.expiringT12) + '</td>'
+            + '</tr>';
+        }).join('') || '<tr><td colspan="15" style="text-align:center; color:var(--cp-text-muted); padding:24px;">No accounts match.</td></tr>';
+      };
+
+      modalSearch.addEventListener('input', renderDrillTable);
+      // Subgroup chips: filter the open drill to one subgroup.
+      const renderChips = (bucket) => {
+        const subs = bucket ? (SUBGROUPS[bucket] || []) : [];
+        if (!drillChips || subs.length <= 1) {
+          if (drillChips) { drillChips.hidden = true; drillChips.innerHTML = ''; }
+          return;
+        }
+        const counts = {};
+        drillRows.forEach((r) => { counts[r._sub] = (counts[r._sub] || 0) + 1; });
+        let html = `<button type="button" class="drill-chip is-active" data-sub="">All <span>${fmtInt(drillRows.length)}</span></button>`;
+        subs.forEach((s) => {
+          html += `<button type="button" class="drill-chip drill-chip--${bucket}" data-sub="${s.key}" title="${s.hint}">${s.label} <span>${fmtInt(counts[s.key] || 0)}</span></button>`;
+        });
+        drillChips.innerHTML = html;
+        drillChips.hidden = false;
+      };
+      if (drillChips) drillChips.addEventListener('click', (e) => {
+        const chip = e.target.closest('.drill-chip');
+        if (!chip) return;
+        drillSubFilter = chip.getAttribute('data-sub') || null;
+        drillChips.querySelectorAll('.drill-chip').forEach((c) => c.classList.toggle('is-active', c === chip));
+        renderDrillTable();
+      });
+      document.querySelectorAll('#drill-table th[data-sort]').forEach((th) => {
+        th.addEventListener('click', () => {
+          const col = th.getAttribute('data-sort');
+          drillSort = drillSort.col === col ? { col, dir: -drillSort.dir } : { col, dir: -1 };
+          renderDrillTable();
+        });
+      });
+
+      // CSV export of the currently-filtered drill view (honours search + sort).
+      // Mirrors the visible table; not capped at the 500-row display limit.
+      const csvEscape = (v) => {
+        if (v === null || v === undefined) return '';
+        const s = String(v);
+        return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      };
+      const exportCsv = () => {
+        const q = modalSearch.value.trim().toLowerCase();
+        let rows = drillRows;
+        if (drillSubFilter) rows = rows.filter((r) => r._sub === drillSubFilter);
+        if (q) rows = rows.filter((r) => r.name.toLowerCase().includes(q) || String(r.tpid).includes(q));
+        const { col, dir } = drillSort;
+        rows = rows.slice().sort((a, b) => {
+          const va = a[col], vb = b[col];
+          if (typeof va === 'number') return (va - vb) * dir;
+          return String(va).localeCompare(String(vb)) * dir;
+        });
+        const headers = ['TPID','Account','Region','Area','SubRegion','Segment','Quarter','Subgroup','Bucket','EligibleSeats','CopilotSeats','Depth_PRU_PAU_pct','Penetration_PAU_Elig_pct','Use_MAU_PAU_pct','Pipeline_USD_Millions','UnpaidChat','ExpiringT12'];
+        const lines = [headers.join(',')];
+        for (const r of rows) {
+          const depth   = r.pau ? (r.pru / r.pau) * 100 : 0;
+          const pen     = r.eligibleSeats ? (r.pau / r.eligibleSeats) * 100 : 0;
+          const useFreq = r.pau ? (r.mau / r.pau) * 100 : 0;
+          lines.push([
+            r.tpid, r.name, r.region || '', r.area || '', r.subRegion || '', r.segment || '',
+            r.quarter || '', r._subLabel || '', r._bucket || '',
+            r.eligibleSeats || 0, r.paidSeats || 0,
+            depth.toFixed(2), pen.toFixed(2), useFreq.toFixed(2),
+            (r.pipeM || 0).toFixed(3), r.unpaidChat || 0, r.expiringT12 || 0
+          ].map(csvEscape).join(','));
+        }
+        // BOM keeps Excel happy with the UTF-8 (TPID names include CJK + accents).
+        const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+        const stamp = new Date().toISOString().slice(0, 10);
+        const slug = (drillTitlePrefix || 'drill').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'drill';
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `exec-portfolio_${slug}_${stamp}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      };
+      if (modalCsv) modalCsv.addEventListener('click', exportCsv);
+
+      const openDrill = (descriptor, regionOverride) => {
+        const [kind, val] = descriptor.split(':');
+        // 'account' is a focus-on-one-account drill: ignore current slicers so the
+        // row is always findable, and seed the search box with the TPID.
+        const isAccount = kind === 'account';
+        const f = isAccount
+          ? { quarter: 'All', region: 'All', area: 'All', subregion: 'All', segment: 'All' }
+          : curFilter();
+        if (regionOverride && regionOverride !== 'All') f.region = regionOverride;
+        const subBucket = kind === 'sub' ? BUCKET_OF_SUB[val] : null;
+        const rows = [];
+        for (let i = 0; i < (ATOMS.rows || []).length; i++) {
+          const r = ATOMS.rows[i];
+          if (!rowMatches(r, f)) continue;
+          const c = classify(r);
+          if (!c) continue;
+          if (kind === 'bucket'  && c.bucket !== val) continue;
+          if (kind === 'sub'     && c.sub    !== val) continue;
+          if (kind === 'account' && String(r.tpid) !== String(val)) continue;
+          rows.push(Object.assign({}, r, { _bucket: c.bucket, _sub: c.sub, _subLabel: SUB_LABEL[c.sub] || c.sub }));
+        }
+        drillRows = rows;
+        drillSort = { col: 'eligibleSeats', dir: -1 };
+        drillSubFilter = null;
+        modalSearch.value = isAccount ? String(val) : '';
+        renderChips(kind === 'bucket' ? val : null);
+        const scopeBits = [];
+        if (f.quarter   !== 'All') scopeBits.push(f.quarter);
+        if (f.region    !== 'All') scopeBits.push(f.region);
+        if (f.area      !== 'All') scopeBits.push(f.area);
+        if (f.subregion !== 'All') scopeBits.push(f.subregion);
+        if (f.segment   !== 'All') scopeBits.push(f.segment);
+        const scope = scopeBits.length ? ' \u00b7 ' + scopeBits.join(' \u00b7 ') : '';
+        let label;
+        if (kind === 'all')         label = 'All in-scope accounts';
+        else if (kind === 'bucket') label = bucketLabels[val] || val;
+        else if (kind === 'sub')    label = (BUCKET_LABEL[subBucket] || '') + ' \u2014 ' + (SUB_LABEL[val] || val);
+        else if (kind === 'account') label = (rows[0] && rows[0].name) ? (rows[0].name + ' \u00b7 TPID ' + val) : ('TPID ' + val);
+        else label = descriptor;
+        drillTitlePrefix = label;
+        modalTitle.textContent = label + scope;
+        renderDrillTable();
+        modal.classList.add('is-open');
+      };
+
+      // Click delegation: [data-drill] anywhere, plus region-mix segments
+      document.addEventListener('click', (e) => {
+        const seg = e.target.closest('.region-mix__seg[data-bucket]');
+        if (seg) {
+          const row = seg.closest('.region-mix__row[data-region-key]');
+          const region = row ? row.getAttribute('data-region-key') : null;
+          openDrill('bucket:' + seg.getAttribute('data-bucket'), region);
+          return;
+        }
+        const drill = e.target.closest('[data-drill]');
+        if (drill) openDrill(drill.getAttribute('data-drill'));
+      });
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', wireDrilldown);
+      } else {
+        wireDrilldown();
+      }
+    })();
+  </script>
+  <!-- Drilldown modal -->
+  <div class="drill-modal" id="drill-modal" role="dialog" aria-modal="true" aria-labelledby="drill-title">
+    <div class="drill-modal__panel">
+      <div class="drill-modal__head">
+        <div class="drill-modal__title" id="drill-title">Drilldown</div>
+        <button class="drill-modal__close" id="drill-close" aria-label="Close">×</button>
+      </div>
+      <div class="drill-modal__toolbar">
+        <input type="search" class="drill-modal__search" id="drill-search" placeholder="Filter by TPID or name… ( / to focus )" />
+        <span class="drill-modal__meta" id="drill-meta"></span>
+        <span style="flex:1"></span>
+        <button type="button" class="drill-modal__btn" id="drill-csv" title="Download visible rows as CSV">Export CSV</button>
+        <span>Click column headers to sort</span>
+      </div>
+      <div class="drill-chips" id="drill-chips" hidden></div>
+      <div class="drill-modal__body">
+        <table class="drill-table" id="drill-table">
+          <thead>
+            <tr>
+              <th data-sort="name">Account</th>
+              <th data-sort="region">Region</th>
+              <th data-sort="area">Area</th>
+              <th data-sort="subRegion">Sub Region</th>
+              <th data-sort="segment">Segment</th>
+              <th data-sort="quarter">Quarter</th>
+              <th data-sort="_subLabel">Subgroup</th>
+              <th data-sort="eligibleSeats" style="text-align:right">Eligible seats</th>
+              <th data-sort="paidSeats" style="text-align:right">Copilot seats</th>
+              <th style="text-align:right">Depth (PRU/PAU)</th>
+              <th style="text-align:right">Pen (PAU/Elig)</th>
+              <th style="text-align:right">Use (MAU/PAU)</th>
+              <th data-sort="pipeM" style="text-align:right">Pipe $M</th>
+              <th data-sort="unpaidChat" style="text-align:right">Unpaid chat</th>
+              <th data-sort="expiringT12" style="text-align:right">Expiring T12</th>
+            </tr>
+          </thead>
+          <tbody id="drill-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sync decision-tree threshold labels with the live classifier thresholds -->
+  <script>
+    (() => {
+      const T = Object.assign(
+        { depth: 0.45, pen: 0.50, actEngaged: 0.60, actShallow: 0.20, minSeats: 50000 },
+        (window.ATOMS_DATA && window.ATOMS_DATA.thresholds) || {}
+      );
+      const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      const pctTxt = (v) => Math.round(v * 100) + '%';
+      set('dtree-thr-depth',   pctTxt(T.depth));
+      set('dtree-thr-pen',     pctTxt(T.pen));
+      set('dtree-thr-eng',     pctTxt(T.actEngaged));
+      set('dtree-thr-shallow', pctTxt(T.actShallow));
+      set('dtree-minseats',  (T.minSeats % 1000 === 0 ? (T.minSeats / 1000) + 'k' : T.minSeats.toLocaleString('en-US')));
+    })();
+  </script>
+</body>
+</html>

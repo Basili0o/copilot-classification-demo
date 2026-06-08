@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Copilot Customer Classification — Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font: 15px/1.55 -apple-system, "Segoe UI", system-ui, sans-serif;
+           color: #1f2937; max-width: 720px; margin: 60px auto; padding: 0 24px; }
+    h1 { font-size: 22px; margin: 0 0 8px; }
+    .lede { color: #4b5563; margin: 0 0 24px; }
+    .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px; margin: 16px 0;
+            background: #fafafa; }
+    .card h2 { font-size: 16px; margin: 0 0 6px; }
+    .card p  { margin: 0 0 12px; color: #4b5563; }
+    a.btn { display: inline-block; padding: 8px 14px; background: #2563eb; color: #fff;
+            text-decoration: none; border-radius: 6px; font-weight: 500; }
+    .warn { background: #fef3c7; border-color: #fcd34d; }
+    code { background: #f3f4f6; padding: 1px 5px; border-radius: 3px; font-size: 13px; }
+    footer { color: #6b7280; font-size: 12px; margin-top: 32px; }
+  </style>
+</head>
+<body>
+  <h1>Copilot Customer Classification — Exec Portfolio</h1>
+  <p class="lede">Operationalises the Copilot decision tree (Maintain / Expansion Ready / At Risk)
+     against the RAS Field Data Model, with classification, subgroup breakdown, and
+     quarter-over-quarter movement computed live in the browser.</p>
+
+  <div class="card warn">
+    <h2>&#9888; Demo data only</h2>
+    <p>This public deployment loads <strong>synthetic sample data</strong> from
+       <code>tpid-atoms.js</code> &mdash; a handful of fake accounts to demonstrate the
+       interaction model. Real customer atoms are <strong>not committed</strong> to this repository.</p>
+  </div>
+
+  <div class="card">
+    <h2>Open the dashboard &rarr;</h2>
+    <p>Filters, classification donut, subgroup breakdown, region mix, quarter-over-quarter bucket
+       movement, top at-risk table, and a sortable drilldown of every in-scope account.</p>
+    <a class="btn" href="exec-portfolio.html">Launch dashboard</a>
+  </div>
+
+  <footer>
+    Static HTML + a vanilla JS data file. No backend, no auth. Source data and extraction scripts
+    in the repo under <code>scripts/</code>.
+  </footer>
+</body>
+</html>

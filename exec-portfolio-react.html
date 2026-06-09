@@ -930,7 +930,11 @@ svg.donut { filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12)); overflow: visib
 
 /* ---- Clickable globe: lift + drop shadow --------------------------------- */
 .globe { filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.16)); }
-.globe-region path { transition: fill 0.15s ease, stroke 0.15s ease; }
+.globe-region path { transition: fill 0.15s ease, stroke 0.15s ease; stroke-width: 0.5; }
+/* Country-border hint overlay (non-interactive) + 3D sphere sheen/vignette */
+.globe-borders { fill: none; stroke: var(--globe-land-edge); stroke-width: 0.4; opacity: 0.5; pointer-events: none; stroke-linecap: round; stroke-linejoin: round; }
+.globe.has-active .globe-borders { opacity: 0.3; }
+.globe-sheen { pointer-events: none; }
 
 /* ---- Decision tree: nodes/leaves with a touch more depth ----------------- */
 .dtree-node { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
@@ -1465,10 +1469,68 @@ function SubgroupCard({ d, openDrill }) {
   );
 }
 
+// Stylised-but-recognisable continent outlines on an orthographic globe
+// (sphere r=92 @ 100,100). Grouped into the three clickable filter regions.
 const GLOBE = [
-  { name: 'Americas', title: 'Americas', paths: ['M40,52 C46,44 58,44 64,50 C72,48 78,56 73,64 C78,70 72,78 63,76 C66,84 56,86 52,80 C44,84 36,78 40,70 C32,68 32,58 40,52 Z', 'M64,98 C72,95 80,101 78,112 C82,123 75,137 69,142 C68,153 59,152 60,141 C55,131 60,118 62,110 C59,105 60,99 64,98 Z'] },
-  { name: 'EMEA', title: 'EMEA \u2014 Europe, Middle East & Africa', paths: ['M97,52 C104,47 114,49 115,56 C120,59 115,67 107,65 C105,72 95,70 97,62 C92,60 91,55 97,52 Z', 'M105,72 C116,71 125,80 122,93 C126,105 117,118 111,127 C109,139 99,139 99,127 C93,116 96,100 99,90 C96,80 99,74 105,72 Z'] },
-  { name: 'APAC', title: 'APAC \u2014 Asia Pacific', paths: ['M120,58 C129,47 146,44 158,51 C171,52 178,62 172,71 C177,80 165,86 156,83 C147,90 134,87 131,79 C123,83 114,75 119,67 C115,64 115,60 120,58 Z', 'M150,112 C161,109 170,116 167,125 C169,132 158,136 150,131 C143,133 139,124 144,117 C144,113 146,112 150,112 Z'] }
+  {
+    name: 'Americas', title: 'Americas \u2014 North & South America',
+    paths: [
+      // North America (Canada → US → Mexico, Gulf + Florida)
+      'M31,57 L37,49 L46,45 L57,44 L67,47 L70,53 L67,58 L71,62 L67,67 L64,64 L62,71 L57,73 L55,67 L51,71 L49,78 L46,86 L44,92 L42,85 L41,77 L37,70 L33,63 Z',
+      // Central America isthmus
+      'M44,92 L49,96 L55,103 L60,110 L57,112 L51,104 L46,98 Z',
+      // South America (Brazil bulge → Patagonia point)
+      'M58,112 L66,109 L75,111 L81,117 L82,126 L79,136 L75,146 L71,158 L68,150 L67,140 L64,132 L62,124 L60,118 Z'
+    ]
+  },
+  {
+    name: 'EMEA', title: 'EMEA \u2014 Europe, Middle East & Africa',
+    paths: [
+      // Europe (Iberia → Scandinavia → Italy)
+      'M101,52 L106,49 L108,53 L113,55 L117,59 L113,62 L116,66 L111,66 L108,71 L106,66 L102,67 L98,64 L100,59 L98,55 Z',
+      // British Isles
+      'M93,57 L95,55 L96,59 L94,62 L92,60 Z',
+      // Africa (West-Africa bulge → Horn → Cape)
+      'M95,82 L103,78 L113,79 L120,81 L125,87 L129,94 L126,99 L121,107 L116,118 L110,132 L106,140 L103,136 L101,124 L98,112 L94,102 L90,94 L89,87 L92,83 Z',
+      // Madagascar
+      'M123,116 L125,114 L127,120 L125,127 L123,122 Z',
+      // Arabian Peninsula
+      'M126,84 L133,81 L138,86 L136,92 L130,93 L127,89 Z'
+    ]
+  },
+  {
+    name: 'APAC', title: 'APAC \u2014 Asia & Oceania',
+    paths: [
+      // Asia mainland (Siberia → China → SE Asia)
+      'M120,60 L130,53 L143,49 L157,49 L169,53 L177,60 L176,67 L170,73 L172,79 L165,82 L160,88 L153,90 L148,86 L142,87 L137,83 L131,81 L126,75 L122,68 Z',
+      // Indian subcontinent
+      'M137,85 L145,85 L148,92 L144,100 L141,106 L139,99 L137,91 Z',
+      // SE Asia / Indonesia
+      'M154,93 L159,95 L157,98 L153,96 Z',
+      'M162,95 L167,96 L165,100 L161,98 Z',
+      'M168,90 L172,91 L170,95 L167,93 Z',
+      // Japan
+      'M179,62 L181,60 L180,66 L178,64 Z',
+      'M176,68 L178,67 L177,73 L175,70 Z',
+      // Australia
+      'M160,124 L170,119 L181,123 L184,131 L179,139 L170,142 L162,138 L158,131 Z'
+    ]
+  }
+];
+
+// Decorative national-border hints (non-interactive overlay)
+const GLOBE_BORDERS = [
+  'M33,57 L46,55 L60,55 L68,57',        // US–Canada
+  'M44,80 L50,77 L56,77',               // US–Mexico
+  'M62,120 L64,132 L68,146',            // Andes
+  'M76,116 L79,126 L77,136',            // Brazil
+  'M104,55 L107,62', 'M110,57 L112,63', // Europe interior
+  'M93,98 L110,96 L124,97',             // Sahel
+  'M119,84 L118,99 L114,111',           // Nile
+  'M101,120 L113,120',                  // central Africa
+  'M137,88 L145,88',                    // India
+  'M150,58 L156,72 L162,80',            // China
+  'M132,66 L146,64 L160,64'             // Central Asia
 ];
 
 function RegionCard({ regionRows, segment, region, onPickRegion, openDrill }) {
@@ -1486,6 +1548,15 @@ function RegionCard({ regionRows, segment, region, onPickRegion, openDrill }) {
               <radialGradient id="globeOcean" cx="38%" cy="34%" r="72%">
                 <stop offset="0%" stopColor="var(--globe-ocean1)" />
                 <stop offset="100%" stopColor="var(--globe-ocean2)" />
+              </radialGradient>
+              <radialGradient id="globeSheen" cx="34%" cy="30%" r="60%">
+                <stop offset="0%" stopColor="#ffffff" stopOpacity="0.40" />
+                <stop offset="55%" stopColor="#ffffff" stopOpacity="0" />
+              </radialGradient>
+              <radialGradient id="globeShade" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#0b1a2b" stopOpacity="0" />
+                <stop offset="70%" stopColor="#0b1a2b" stopOpacity="0" />
+                <stop offset="100%" stopColor="#0b1a2b" stopOpacity="0.30" />
               </radialGradient>
               <clipPath id="globeClip"><circle cx="100" cy="100" r="92" /></clipPath>
             </defs>
@@ -1512,6 +1583,11 @@ function RegionCard({ regionRows, segment, region, onPickRegion, openDrill }) {
                 );
               })}
             </g>
+            <g className="globe-borders" clipPath="url(#globeClip)">
+              {GLOBE_BORDERS.map((d, i) => <path key={i} d={d} />)}
+            </g>
+            <circle className="globe-sheen" cx="100" cy="100" r="92" fill="url(#globeShade)" />
+            <circle className="globe-sheen" cx="100" cy="100" r="92" fill="url(#globeSheen)" />
           </svg>
           <div className="globe-pick__cap">Click a region to filter &middot; click again to clear</div>
         </div>
